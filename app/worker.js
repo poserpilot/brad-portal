@@ -67,7 +67,7 @@ export default {
         const id = m[1];
         let t = state.tasks.find((x) => x.id === id) || state.done.find((x) => x.id === id);
         if (!t) return json({ error: "not found" }, 404);
-        for (const k of ["title", "priority", "project", "due", "notes", "status"]) {
+        for (const k of ["title", "priority", "project", "due", "notes", "status", "completed"]) {
           if (k in body) t[k] = body[k];
         }
         // Move between active/done lists on status change (archive over delete).
@@ -216,8 +216,11 @@ const UI = `<!doctype html>
   .title{color:#fff;font-size:15px;margin:0 0 3px} .meta{font-size:12px;color:#8fb0d6}
   .notes{font-size:12.5px;color:#a9c3e0;margin-top:5px}
   .due{font-weight:700} .due.soon{color:var(--gold)} .due.over{color:var(--red)}
-  .chk{margin-top:2px;cursor:pointer;background:var(--panel2);border:1px solid #34597e;color:#fff;
-    width:26px;height:26px;border-radius:6px;font-size:14px;flex:0 0 auto}
+  .chk{margin-top:1px;cursor:pointer;background:var(--panel2);border:1px solid #34597e;color:#fff;
+    width:24px;height:24px;border-radius:6px;font-size:15px;flex:0 0 auto;padding:0;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center}
+  .chk:hover{border-color:var(--sky)}
+  .chk.done{background:var(--green);border-color:var(--green);color:#0B1F38}
   .pill{display:inline-block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
     background:var(--panel2);color:var(--ice);border-radius:20px;padding:2px 9px;margin-left:6px}
   .empty{color:#7f9dbd;font-style:italic;padding:8px 0}
@@ -270,13 +273,13 @@ async function load(){
     for(const t of items) out+=card(t);
   }
   out+='<div class="col-h">✅ Recently done</div>';
-  out+= done.length? done.map(t=>'<div class="card low"><div class="chk" style="background:var(--green);border:0">✓</div><div><p class="title">'+h(t.title)+'</p><div class="meta">'+h(t.project)+' · '+h(t.completed||"")+'</div></div></div>').join("") : '<div class="empty">none yet</div>';
+  out+= done.length? done.map(t=>'<div class="card low"><button class="chk done" title="click to reopen" onclick="reopen(\\''+t.id+'\\')">✓</button><div style="flex:1"><p class="title">'+h(t.title)+'</p><div class="meta">'+h(t.project)+' · '+h(t.completed||"")+'</div></div></div>').join("") : '<div class="empty">none yet</div>';
   document.getElementById("board").innerHTML=out;
 }
 function card(t){
   const dc=dueClass(t.due), dl=dueLabel(t.due);
   return '<div class="card '+t.priority+(t.status==="blocked"?" blocked":"")+'">'
-    +'<button class="chk" title="mark done" onclick="done(\\''+t.id+'\\')">✓</button>'
+    +'<button class="chk" title="mark done" onclick="done(\\''+t.id+'\\')"></button>'
     +'<div style="flex:1"><p class="title">'+h(t.title)
     +(t.status==="blocked"?'<span class="pill">blocked</span>':'')
     +'<span class="pill">'+h(t.project)+'</span></p>'
@@ -296,6 +299,11 @@ async function done(id){
   const key=ensureKey(); if(!key) return;
   const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({status:"done"})});
   if(!r.ok){ alert("Update failed: "+await apiErr(r)); return; } load();
+}
+async function reopen(id){
+  const key=ensureKey(); if(!key) return;
+  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({status:"open",completed:null})});
+  if(!r.ok){ alert("Reopen failed: "+await apiErr(r)); return; } load();
 }
 try{ const sk=localStorage.getItem("portal_write_key"); if(sk) document.getElementById("key").value=sk; }catch(e){}
 load();
