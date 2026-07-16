@@ -241,11 +241,15 @@ const UI = `<!doctype html>
     <button class="ghost" onclick="load()">↻</button>
   </div>
   <div id="board"></div>
-  <p class="muted">Canonical store: <code>portal/data/tasks.json</code> · versioned in GitHub · brad@halo.one</p>
+  <p class="muted">Canonical store: <code>data/tasks.json</code> · versioned in GitHub · brad@halo.one</p>
 </div>
 <script>
 const API = location.origin + "/api/tasks";
 let KEY = "";
+try{ KEY = localStorage.getItem("portal_write_key") || ""; }catch(e){}
+function getKey(){ const f=document.getElementById("key").value.trim(); if(f){ KEY=f; try{localStorage.setItem("portal_write_key",f)}catch(e){} } return KEY; }
+function ensureKey(){ const k=getKey(); if(!k){ alert("Enter your write key in the box at the top first — it'll be remembered after that."); document.getElementById("key").focus(); } return k; }
+async function apiErr(r){ try{const j=await r.json(); return (r.status===401?"Write key rejected — check it matches the WRITE_KEY you set. ":"")+(j.error||r.status);}catch(e){return String(r.status);} }
 function h(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function dueClass(d){ if(!d) return ""; const days=(new Date(d)-new Date())/864e5;
   if(days<0) return "over"; if(days<=3) return "soon"; return ""; }
@@ -281,18 +285,19 @@ function card(t){
 }
 async function add(){
   const title=document.getElementById("title").value.trim(); if(!title) return;
-  KEY=document.getElementById("key").value||KEY;
+  const key=ensureKey(); if(!key) return;
   const body={title, priority:document.getElementById("priority").value,
     due:document.getElementById("due").value||null, project:document.getElementById("project").value||"personal", source:"portal-ui"};
-  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+KEY},body:JSON.stringify(body)});
-  if(!r.ok){ alert("Add failed: "+(await r.json()).error); return; }
+  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify(body)});
+  if(!r.ok){ alert("Add failed: "+await apiErr(r)); return; }
   document.getElementById("title").value=""; document.getElementById("due").value=""; load();
 }
 async function done(id){
-  KEY=document.getElementById("key").value||KEY;
-  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+KEY},body:JSON.stringify({status:"done"})});
-  if(!r.ok){ alert("Update failed: "+(await r.json()).error); return; } load();
+  const key=ensureKey(); if(!key) return;
+  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({status:"done"})});
+  if(!r.ok){ alert("Update failed: "+await apiErr(r)); return; } load();
 }
+try{ const sk=localStorage.getItem("portal_write_key"); if(sk) document.getElementById("key").value=sk; }catch(e){}
 load();
 </script>
 </body></html>`;
