@@ -49,6 +49,16 @@ Base URL: `https://<your-worker>.workers.dev`
 | `PATCH` | `/api/tasks/:id` | Bearer WRITE_KEY | Update fields (e.g. `{"status":"done"}` moves it to `done[]` with a date). |
 | `GET` | `/` | none | Web portal UI. |
 
+## MCP connector (add to-dos from ANY Claude surface)
+
+The Worker also hosts a Model Context Protocol server at **`/mcp`** (Streamable HTTP, static bearer auth), so the portal can be added to Claude as a **custom connector**. Once added, any connector-enabled Claude surface (Cowork, Claude Code, claude.ai web/mobile, Claude-in-Slack) can manage the portal natively — no write key typed into a page.
+
+Add it in **Claude → Settings → Connectors → Add custom connector**:
+- **URL:** `https://brad-portal.brad-0b9.workers.dev/mcp`
+- **Auth:** custom bearer token = the `WRITE_KEY` (or set a dedicated `MCP_TOKEN` secret on the Worker).
+
+Tools exposed: `add_todo`, `list_todos`, `complete_todo`, `reopen_todo`.
+
 ## How Claude sessions use it
 
 - **Any session / project:** hit the Worker API — e.g. add a to-do with a single authenticated `POST /api/tasks`. The `brad-claude-context` README §0 pointer carries the endpoint so every project knows where the portal lives.

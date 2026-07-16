@@ -18,7 +18,8 @@
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type,Authorization",
+  "Access-Control-Allow-Headers": "Content-Type,Authorization,mcp-session-id,mcp-protocol-version",
+  "Access-Control-Expose-Headers": "mcp-session-id",
 };
 
 export default {
@@ -38,45 +39,19 @@ export default {
       }
       if (pathname === "/api/tasks" && request.method === "POST") {
         requireAuth(request, env);
-        const body = await request.json();
-        const state = await getState(env);
-        const id = "T-" + String(state.next_id).padStart(4, "0");
-        const task = {
-          id,
-          title: String(body.title || "").trim(),
-          status: body.status || "open",
-          priority: body.priority || "med",
-          project: body.project || "personal",
-          due: body.due || null,
-          created: today(),
-          completed: null,
-          source: body.source || "api",
-          notes: body.notes || "",
-        };
-        if (!task.title) return json({ error: "title required" }, 400);
-        state.tasks.push(task);
-        state.next_id += 1;
-        await saveState(env, state, `portal: add ${id} — ${task.title}`);
+        const task = await addTaskState(env, await request.json());
+        if (!task) return json({ error: "title required" }, 400);
         return json({ ok: true, task });
       }
       const m = pathname.match(/^\/api\/tasks\/(T-\d+)$/);
       if (m && request.method === "PATCH") {
         requireAuth(request, env);
-        const body = await request.json();
-        const state = await getState(env);
-        const id = m[1];
-        let t = state.tasks.find((x) => x.id === id) || state.done.find((x) => x.id === id);
+        const t = await patchTaskState(env, m[1], await request.json());
         if (!t) return json({ error: "not found" }, 404);
-        for (const k of ["title", "priority", "project", "due", "notes", "status", "completed"]) {
-          if (k in body) t[k] = body[k];
-        }
-        // Move between active/done lists on status change (archive over delete).
-        if (t.status === "done" && !t.completed) t.completed = today();
-        state.tasks = state.tasks.filter((x) => x.id !== id);
-        state.done = state.done.filter((x) => x.id !== id);
-        (t.status === "done" || t.status === "archived" ? state.done : state.tasks).push(t);
-        await saveState(env, state, `portal: update ${id} — ${t.status}`);
         return json({ ok: true, task: t });
+      }
+      if (pathname === "/mcp") {
+        return handleMcp(request, env);
       }
       return json({ error: "not found" }, 404);
     } catch (e) {
@@ -183,6 +158,194 @@ function b64encodeUtf8(str) {
 function b64decodeUtf8(b64) {
   const bin = atob(String(b64).replace(/\n/g, ""));
   return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+/* ---------- task mutation helpers (shared by REST + MCP) ---------- */
+
+async function addTaskState(env, body) {
+  const state = await getState(env);
+  const title = String((body && body.title) || "").trim();
+  if (!title) return null;
+  const id = "T-" + String(state.next_id).padStart(4, "0");
+  const task = {
+    id, title,
+    status: body.status || "open",
+    priority: body.priority || "med",
+    project: body.project || "personal",
+    due: body.due || null,
+    created: today(),
+    completed: null,
+    source: body.source || "api",
+    notes: body.notes || "",
+  };
+  state.tasks.push(task);
+  state.next_id += 1;
+  await saveState(env, state, `portal: add ${id} — ${task.title}`);
+  return task;
+}
+
+async function patchTaskState(env, id, patch) {
+  const state = await getState(env);
+  let t = state.tasks.find((x) => x.id === id) || state.done.find((x) => x.id === id);
+  if (!t) return null;
+  for (const k of ["title", "priority", "project", "due", "notes", "status", "completed"]) {
+    if (patch && k in patch) t[k] = patch[k];
+  }
+  if (t.status === "done" && !t.completed) t.completed = today();
+  state.tasks = state.tasks.filter((x) => x.id !== id);
+  state.done = state.done.filter((x) => x.id !== id);
+  (t.status === "done" || t.status === "archived" ? state.done : state.tasks).push(t);
+  await saveState(env, state, `portal: update ${id} — ${t.status}`);
+  return t;
+}
+
+/* ---------- MCP server (Streamable HTTP, static bearer auth) ----------
+ * Add as a Claude custom connector:
+ *   URL: https://<worker>/mcp   Auth: custom bearer token = WRITE_KEY (or MCP_TOKEN if set)
+ */
+
+const MCP_TOOLS = [
+  {
+    name: "add_todo",
+    description: "Add a new to-do to Brad's Working Portal task list.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "The task text." },
+        due: { type: "string", description: "Optional due date, ISO format YYYY-MM-DD." },
+        priority: { type: "string", enum: ["high", "med", "low"], description: "Priority; defaults to med." },
+        project: { type: "string", description: "Optional project tag, e.g. monarch, halo-reg, personal." },
+        notes: { type: "string", description: "Optional extra detail." },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "list_todos",
+    description: "List Brad's open to-dos with priorities and due dates. Optionally filter by project or include recently completed.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        project: { type: "string", description: "Optional project filter." },
+        include_done: { type: "boolean", description: "Also list recently completed items." },
+      },
+    },
+  },
+  {
+    name: "complete_todo",
+    description: "Mark a to-do as done by its id (e.g. T-0003).",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string", description: "Task id, e.g. T-0003." } },
+      required: ["id"],
+    },
+  },
+  {
+    name: "reopen_todo",
+    description: "Reopen a previously completed to-do by its id.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string", description: "Task id, e.g. T-0003." } },
+      required: ["id"],
+    },
+  },
+];
+
+function mcpBearerOk(request, env) {
+  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  const expected = env.MCP_TOKEN || env.WRITE_KEY;
+  return !!expected && token === expected;
+}
+
+async function runTool(env, name, args) {
+  args = args || {};
+  if (name === "add_todo") {
+    const t = await addTaskState(env, { ...args, source: "mcp" });
+    if (!t) return { text: "Could not add — a title is required.", isError: true };
+    return { text: `Added ${t.id}: "${t.title}"${t.due ? ` (due ${t.due})` : ""} [${t.priority}${t.project ? ", " + t.project : ""}].` };
+  }
+  if (name === "list_todos") {
+    const state = await getState(env);
+    let open = state.tasks;
+    if (args.project) open = open.filter((x) => (x.project || "").toLowerCase() === String(args.project).toLowerCase());
+    const order = { high: 0, med: 1, low: 2 };
+    open = open.slice().sort((a, b) => (order[a.priority] - order[b.priority]) || ((a.due || "9") > (b.due || "9") ? 1 : -1));
+    let out = open.length
+      ? open.map((t) => `• ${t.id} [${t.priority}] ${t.title}${t.due ? ` — due ${t.due}` : ""}${t.project ? ` (${t.project})` : ""}`).join("\n")
+      : "No open to-dos.";
+    if (args.include_done) {
+      const done = state.done.slice(-8).reverse();
+      out += "\n\nRecently done:\n" + (done.length ? done.map((t) => `• ${t.id} ${t.title} (${t.completed || ""})`).join("\n") : "none");
+    }
+    return { text: out };
+  }
+  if (name === "complete_todo") {
+    const t = await patchTaskState(env, String(args.id || ""), { status: "done" });
+    if (!t) return { text: `No task with id ${args.id}.`, isError: true };
+    return { text: `Marked ${t.id} done: "${t.title}".` };
+  }
+  if (name === "reopen_todo") {
+    const t = await patchTaskState(env, String(args.id || ""), { status: "open", completed: null });
+    if (!t) return { text: `No task with id ${args.id}.`, isError: true };
+    return { text: `Reopened ${t.id}: "${t.title}".` };
+  }
+  return { text: `Unknown tool: ${name}`, isError: true };
+}
+
+async function handleMcp(request, env) {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405, headers: { ...CORS, "Allow": "POST" } });
+  }
+  if (!mcpBearerOk(request, env)) {
+    return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "unauthorized" } }), {
+      status: 401, headers: { "Content-Type": "application/json", "WWW-Authenticate": "Bearer", ...CORS },
+    });
+  }
+  let payload;
+  try { payload = await request.json(); }
+  catch { return mcpJson({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "parse error" } }); }
+  const batch = Array.isArray(payload);
+  const msgs = batch ? payload : [payload];
+  const out = [];
+  for (const msg of msgs) {
+    const r = await handleMcpMessage(env, msg);
+    if (r) out.push(r);
+  }
+  if (out.length === 0) return new Response(null, { status: 202, headers: CORS });
+  return mcpJson(batch ? out : out[0]);
+}
+
+async function handleMcpMessage(env, msg) {
+  const { id, method, params } = msg || {};
+  const isNote = id === undefined || id === null;
+  const ok = (result) => (isNote ? null : { jsonrpc: "2.0", id, result });
+  const fail = (code, message) => (isNote ? null : { jsonrpc: "2.0", id, error: { code, message } });
+
+  if (method === "initialize") {
+    return ok({
+      protocolVersion: (params && params.protocolVersion) || "2025-06-18",
+      capabilities: { tools: {} },
+      serverInfo: { name: "brad-portal", version: "1.0.0" },
+    });
+  }
+  if (method === "notifications/initialized" || method === "notifications/cancelled") return null;
+  if (method === "ping") return ok({});
+  if (method === "tools/list") return ok({ tools: MCP_TOOLS });
+  if (method === "tools/call") {
+    const name = params && params.name;
+    const args = (params && params.arguments) || {};
+    try {
+      const r = await runTool(env, name, args);
+      return ok({ content: [{ type: "text", text: r.text }], isError: !!r.isError });
+    } catch (e) {
+      return ok({ content: [{ type: "text", text: "Error: " + (e.message || String(e)) }], isError: true });
+    }
+  }
+  return fail(-32601, `method not found: ${method}`);
+}
+
+function mcpJson(obj) {
+  return new Response(JSON.stringify(obj), { headers: { "Content-Type": "application/json", ...CORS } });
 }
 
 /* ---------- Web UI ("Cleared to Climb" house style) ---------- */
