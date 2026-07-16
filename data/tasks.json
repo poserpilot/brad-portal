@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T21:00:00Z",
-  "updated_by": "claude-session-2026-07-16",
+  "updated": "2026-07-16T21:52:56.213Z",
+  "updated_by": "portal-worker",
   "next_id": 8,
   "tasks": [
     {
@@ -15,18 +15,6 @@
       "completed": null,
       "source": "context-repo §6",
       "notes": "Daily-archive targets still point at the OLD retired Docs after the 2026-07-16 manual reconciliation. Fix via a small PR so the archive backs up the current Docs."
-    },
-    {
-      "id": "T-0002",
-      "title": "Delegate risk-acceptance authority (3 roles)",
-      "status": "open",
-      "priority": "high",
-      "project": "halo-reg",
-      "due": "2026-07-31",
-      "created": "2026-07-16",
-      "completed": null,
-      "source": "context-repo §6",
-      "notes": "Identify + delegate: Accountable Exec/CEO, Chief Eng or Head of Safety, program lead. Critical-path for the SMS section; delegation memo queued for signatures."
     },
     {
       "id": "T-0003",
@@ -89,5 +77,18 @@
       "notes": "Written up, not built (tabled 2026-07-16). Brad asked to be reminded periodically in session wrap-ups."
     }
   ],
-  "done": []
+  "done": [
+    {
+      "id": "T-0002",
+      "title": "Delegate risk-acceptance authority (3 roles)",
+      "status": "done",
+      "priority": "high",
+      "project": "halo-reg",
+      "due": "2026-07-31",
+      "created": "2026-07-16",
+      "completed": "2026-07-16",
+      "source": "context-repo §6",
+      "notes": "Identify + delegate: Accountable Exec/CEO, Chief Eng or Head of Safety, program lead. Critical-path for the SMS section; delegation memo queued for signatures."
+    }
+  ]
 }
