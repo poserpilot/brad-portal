@@ -33,6 +33,12 @@ export default {
       if (pathname === "/" || pathname === "/index.html") {
         return html(UI);
       }
+      // ---- OAuth (Claude custom-connector auth) ----
+      if (pathname.startsWith("/.well-known/oauth-protected-resource")) return oauthPRM(request);
+      if (pathname.startsWith("/.well-known/oauth-authorization-server") || pathname.startsWith("/.well-known/openid-configuration")) return oauthASM(request);
+      if (pathname === "/register" && request.method === "POST") return oauthRegister(request, env);
+      if (pathname === "/authorize") return oauthAuthorize(request, env);
+      if (pathname === "/token" && request.method === "POST") return oauthToken(request, env);
       if (pathname === "/api/tasks" && request.method === "GET") {
         const state = await getState(env);
         return json(state);
@@ -147,8 +153,8 @@ function json(obj, status = 200) {
     status, headers: { "Content-Type": "application/json", ...CORS },
   });
 }
-function html(body) {
-  return new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8", ...CORS } });
+function html(body, status = 200) {
+  return new Response(body, { status, headers: { "Content-Type": "text/html; charset=utf-8", ...CORS } });
 }
 function b64encodeUtf8(str) {
   const bytes = new TextEncoder().encode(str);
@@ -251,10 +257,13 @@ const MCP_TOOLS = [
   },
 ];
 
-function mcpBearerOk(request, env) {
+async function mcpAuthOk(request, env) {
   const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-  const expected = env.MCP_TOKEN || env.WRITE_KEY;
-  return !!expected && token === expected;
+  if (!token) return false;
+  const staticKey = env.MCP_TOKEN || env.WRITE_KEY;
+  if (staticKey && token === staticKey) return true; // static bearer (Claude Code / direct API)
+  const rec = await env.PORTAL_KV.get("oauth:at:" + token, "json"); // OAuth access token
+  return !!rec;
 }
 
 async function runTool(env, name, args) {
@@ -296,9 +305,11 @@ async function handleMcp(request, env) {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405, headers: { ...CORS, "Allow": "POST" } });
   }
-  if (!mcpBearerOk(request, env)) {
+  if (!(await mcpAuthOk(request, env))) {
+    const origin = new URL(request.url).origin;
     return new Response(JSON.stringify({ jsonrpc: "2.0", id: null, error: { code: -32001, message: "unauthorized" } }), {
-      status: 401, headers: { "Content-Type": "application/json", "WWW-Authenticate": "Bearer", ...CORS },
+      status: 401, headers: { "Content-Type": "application/json",
+        "WWW-Authenticate": `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource"`, ...CORS },
     });
   }
   let payload;
@@ -346,6 +357,135 @@ async function handleMcpMessage(env, msg) {
 
 function mcpJson(obj) {
   return new Response(JSON.stringify(obj), { headers: { "Content-Type": "application/json", ...CORS } });
+}
+
+/* ---------- OAuth 2.1 + Dynamic Client Registration (Claude connector) ----------
+ * Minimal single-user authorization server. The /authorize login uses
+ * AUTH_PASSWORD (falls back to WRITE_KEY). Opaque tokens stored in KV. PKCE S256.
+ */
+
+function oauthMeta(request) {
+  const o = new URL(request.url).origin;
+  return {
+    prm: { resource: o, authorization_servers: [o], bearer_methods_supported: ["header"], resource_documentation: o },
+    asm: {
+      issuer: o,
+      authorization_endpoint: o + "/authorize",
+      token_endpoint: o + "/token",
+      registration_endpoint: o + "/register",
+      response_types_supported: ["code"],
+      grant_types_supported: ["authorization_code", "refresh_token"],
+      code_challenge_methods_supported: ["S256"],
+      token_endpoint_auth_methods_supported: ["none"],
+      scopes_supported: ["mcp"],
+    },
+  };
+}
+function oauthPRM(request) { return json(oauthMeta(request).prm); }
+function oauthASM(request) { return json(oauthMeta(request).asm); }
+
+async function oauthRegister(request, env) {
+  let body = {}; try { body = await request.json(); } catch {}
+  const client_id = "c_" + crypto.randomUUID().replace(/-/g, "");
+  const redirect_uris = Array.isArray(body.redirect_uris) ? body.redirect_uris : [];
+  await env.PORTAL_KV.put("oauth:client:" + client_id, JSON.stringify({ redirect_uris, client_name: body.client_name || "" }), { expirationTtl: 60 * 60 * 24 * 180 });
+  return json({
+    client_id, client_id_issued_at: Math.floor(Date.now() / 1000), redirect_uris,
+    token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"], response_types: ["code"],
+  }, 201);
+}
+
+async function oauthAuthorize(request, env) {
+  const url = new URL(request.url);
+  if (request.method === "GET") {
+    const p = url.searchParams;
+    const client_id = p.get("client_id"), redirect_uri = p.get("redirect_uri");
+    if (!client_id || !redirect_uri) return html(authPage(p, "Missing client_id or redirect_uri"), 400);
+    const client = await env.PORTAL_KV.get("oauth:client:" + client_id, "json");
+    if (!client || (client.redirect_uris.length && !client.redirect_uris.includes(redirect_uri)))
+      return html(authPage(p, "Unknown client or redirect_uri"), 400);
+    return html(authPage(p, ""));
+  }
+  if (request.method === "POST") {
+    const form = await readForm(request);
+    const expected = env.AUTH_PASSWORD || env.WRITE_KEY;
+    if (!expected || (form.get("password") || "") !== expected) {
+      const p = new URLSearchParams(); for (const [k, v] of form.entries()) if (k !== "password") p.set(k, v);
+      return html(authPage(p, "Wrong key — try again."), 401);
+    }
+    const code = crypto.randomUUID().replace(/-/g, "");
+    await env.PORTAL_KV.put("oauth:code:" + code, JSON.stringify({
+      client_id: form.get("client_id"), redirect_uri: form.get("redirect_uri"),
+      code_challenge: form.get("code_challenge") || "", scope: form.get("scope") || "mcp",
+    }), { expirationTtl: 600 });
+    const redirect_uri = form.get("redirect_uri");
+    const state = form.get("state") || "";
+    const sep = redirect_uri.includes("?") ? "&" : "?";
+    const loc = redirect_uri + sep + "code=" + encodeURIComponent(code) + (state ? "&state=" + encodeURIComponent(state) : "");
+    return new Response(null, { status: 302, headers: { Location: loc, ...CORS } });
+  }
+  return new Response("Method Not Allowed", { status: 405, headers: { ...CORS, Allow: "GET,POST" } });
+}
+
+async function oauthToken(request, env) {
+  const form = await readForm(request);
+  const grant = form.get("grant_type");
+  if (grant === "authorization_code") {
+    const code = form.get("code"), redirect_uri = form.get("redirect_uri"), client_id = form.get("client_id");
+    const rec = code ? await env.PORTAL_KV.get("oauth:code:" + code, "json") : null;
+    if (!rec || rec.client_id !== client_id || rec.redirect_uri !== redirect_uri) return json({ error: "invalid_grant" }, 400);
+    if (rec.code_challenge) {
+      const calc = await sha256b64url(form.get("code_verifier") || "");
+      if (calc !== rec.code_challenge) return json({ error: "invalid_grant", error_description: "PKCE failed" }, 400);
+    }
+    await env.PORTAL_KV.delete("oauth:code:" + code);
+    return json(await issueTokens(env, client_id, rec.scope || "mcp"));
+  }
+  if (grant === "refresh_token") {
+    const rt = form.get("refresh_token");
+    const rec = rt ? await env.PORTAL_KV.get("oauth:rt:" + rt, "json") : null;
+    if (!rec) return json({ error: "invalid_grant" }, 400);
+    await env.PORTAL_KV.delete("oauth:rt:" + rt);
+    return json(await issueTokens(env, rec.client_id, rec.scope || "mcp"));
+  }
+  return json({ error: "unsupported_grant_type" }, 400);
+}
+
+async function issueTokens(env, client_id, scope) {
+  const at = randTok(), rt = randTok(), ttl = 60 * 60 * 24 * 30;
+  await env.PORTAL_KV.put("oauth:at:" + at, JSON.stringify({ client_id, scope }), { expirationTtl: ttl });
+  await env.PORTAL_KV.put("oauth:rt:" + rt, JSON.stringify({ client_id, scope }), { expirationTtl: 60 * 60 * 24 * 90 });
+  return { access_token: at, token_type: "Bearer", expires_in: ttl, refresh_token: rt, scope };
+}
+
+function randTok() { return (crypto.randomUUID() + crypto.randomUUID()).replace(/-/g, ""); }
+async function sha256b64url(s) {
+  const d = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  let bin = ""; for (const x of d) bin += String.fromCharCode(x);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function readForm(request) {
+  const ct = request.headers.get("Content-Type") || "";
+  if (ct.includes("application/json")) { const j = await request.json().catch(() => ({})); return new Map(Object.entries(j)); }
+  return await request.formData();
+}
+function escAttr(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function authPage(params, err) {
+  const fields = ["client_id", "redirect_uri", "state", "code_challenge", "code_challenge_method", "scope", "resource", "response_type"];
+  const hidden = fields.map((f) => `<input type="hidden" name="${f}" value="${escAttr(params.get(f) || "")}">`).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Authorize · Working Portal</title><style>
+body{margin:0;font-family:Arial,sans-serif;background:#0B1F38;color:#B7CCE4;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.card{background:#15304C;border:1px solid #1E4063;border-radius:12px;padding:28px 26px;max-width:360px;width:90%}
+h1{color:#fff;font-size:20px;margin:0 0 4px}.k{letter-spacing:.2em;font-size:11px;color:#46A5E6;text-transform:uppercase}
+p{font-size:13px;color:#8fb0d6}input[type=password]{width:100%;box-sizing:border-box;background:#0B1F38;color:#fff;border:1px solid #1E4063;border-radius:8px;padding:10px;font-size:14px;margin:10px 0}
+button{width:100%;background:#F2B13B;color:#1a1200;border:0;border-radius:8px;padding:11px;font-weight:700;font-size:14px;cursor:pointer}
+.err{color:#E0654F;font-size:13px;margin:6px 0}</style></head><body>
+<form class="card" method="POST" action="/authorize"><div class="k">Halo · Personal Ops</div>
+<h1>Authorize Claude</h1><p>Connect Claude to your Working Portal. Enter your portal key to approve.</p>
+${err ? `<div class="err">${escAttr(err)}</div>` : ""}${hidden}
+<input type="password" name="password" placeholder="portal key" autofocus>
+<button type="submit">Approve</button></form></body></html>`;
 }
 
 /* ---------- Web UI ("Cleared to Climb" house style) ---------- */

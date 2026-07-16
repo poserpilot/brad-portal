@@ -55,7 +55,9 @@ The Worker also hosts a Model Context Protocol server at **`/mcp`** (Streamable 
 
 Add it in **Claude → Settings → Connectors → Add custom connector**:
 - **URL:** `https://brad-portal.brad-0b9.workers.dev/mcp`
-- **Auth:** custom bearer token = the `WRITE_KEY` (or set a dedicated `MCP_TOKEN` secret on the Worker).
+- **Auth:** OAuth (handled automatically). Claude discovers the OAuth endpoints, registers itself, and sends you to a portal **Authorize** page — approve by entering your portal key (`AUTH_PASSWORD`, or `WRITE_KEY` if that's not set). Access/refresh tokens are then managed by Claude.
+
+The Worker is its own OAuth 2.1 authorization server (discovery metadata, dynamic client registration, PKCE, token + refresh) — no external identity provider. A static bearer (`WRITE_KEY`/`MCP_TOKEN`) also still works for Claude Code / direct API use.
 
 Tools exposed: `add_todo`, `list_todos`, `complete_todo`, `reopen_todo`.
 
