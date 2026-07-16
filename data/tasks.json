@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T22:01:33.397Z",
+  "updated": "2026-07-16T22:30:59.786Z",
   "updated_by": "portal-worker",
-  "next_id": 8,
+  "next_id": 9,
   "tasks": [
     {
       "id": "T-0001",
@@ -87,6 +87,18 @@
       "completed": null,
       "source": "context-repo §6",
       "notes": "Identify + delegate: Accountable Exec/CEO, Chief Eng or Head of Safety, program lead. Critical-path for the SMS section; delegation memo queued for signatures."
+    },
+    {
+      "id": "T-0008",
+      "title": "Confirm remaining §927 param owners",
+      "status": "open",
+      "priority": "med",
+      "project": "halo-reg",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "mcp",
+      "notes": ""
     }
   ],
   "done": []
