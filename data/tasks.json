@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T23:32:34.473Z",
+  "updated": "2026-07-16T23:36:05.987Z",
   "updated_by": "portal-worker",
   "next_id": 11,
   "tasks": [
@@ -111,20 +111,19 @@
       "completed": null,
       "source": "portal-ui",
       "notes": ""
-    }
-  ],
-  "done": [
+    },
     {
       "id": "T-0008",
       "title": "Confirm remaining §927 param owners",
-      "status": "done",
+      "status": "open",
       "priority": "med",
       "project": "halo-reg",
       "due": null,
       "created": "2026-07-16",
-      "completed": "2026-07-16",
+      "completed": null,
       "source": "mcp",
       "notes": ""
     }
-  ]
+  ],
+  "done": []
 }
