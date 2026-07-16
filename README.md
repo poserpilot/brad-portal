@@ -47,7 +47,9 @@ Base URL: `https://<your-worker>.workers.dev`
 | `GET` | `/api/tasks` | none | Full state (open + done). |
 | `POST` | `/api/tasks` | Bearer WRITE_KEY | Add a task. Body: `{title, due?, priority?, project?, notes?, source?}` |
 | `PATCH` | `/api/tasks/:id` | Bearer WRITE_KEY | Update fields (e.g. `{"status":"done"}` moves it to `done[]` with a date). |
-| `GET` | `/` | none | Web portal UI. |
+| `GET` | `/` | session | Web portal UI. First visit shows a sign-in page (portal key → `AUTH_PASSWORD`/`WRITE_KEY`); sets a 30-day HttpOnly session cookie, then writes are cookie-authorized (no key box). `/logout` clears it. |
+
+Writes (`POST`/`PATCH`) accept **any** of: the session cookie (browser), a static bearer (`WRITE_KEY`/`MCP_TOKEN`), or an OAuth token. `GET /api/tasks` stays open so the scheduled daily brief can read it via WebFetch (which can't send auth headers). Locking that read down would require a custom domain + Cloudflare Access.
 
 ## MCP connector (add to-dos from ANY Claude surface)
 

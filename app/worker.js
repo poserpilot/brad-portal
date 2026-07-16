@@ -31,7 +31,21 @@ export default {
 
     try {
       if (pathname === "/" || pathname === "/index.html") {
-        return html(UI);
+        if (await sessionOk(request, env)) return html(UI);
+        return html(loginPage(""));
+      }
+      if (pathname === "/login" && request.method === "POST") {
+        const form = await readForm(request);
+        const expected = env.AUTH_PASSWORD || env.WRITE_KEY;
+        if (!expected || (form.get("password") || "") !== expected) return html(loginPage("Wrong key — try again."), 401);
+        const sid = randTok();
+        await env.PORTAL_KV.put("sess:" + sid, JSON.stringify({ created: Date.now() }), { expirationTtl: 60 * 60 * 24 * 30 });
+        return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": `sess=${sid}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24 * 30}`, ...CORS } });
+      }
+      if (pathname === "/logout") {
+        const sid = getCookie(request, "sess");
+        if (sid) await env.PORTAL_KV.delete("sess:" + sid);
+        return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": "sess=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0", ...CORS } });
       }
       // ---- OAuth (Claude custom-connector auth) ----
       if (pathname.startsWith("/.well-known/oauth-protected-resource")) return oauthPRM(request);
@@ -44,14 +58,14 @@ export default {
         return json(state);
       }
       if (pathname === "/api/tasks" && request.method === "POST") {
-        requireAuth(request, env);
+        if (!(await authorized(request, env))) return json({ error: "unauthorized" }, 401);
         const task = await addTaskState(env, await request.json());
         if (!task) return json({ error: "title required" }, 400);
         return json({ ok: true, task });
       }
       const m = pathname.match(/^\/api\/tasks\/(T-\d+)$/);
       if (m && request.method === "PATCH") {
-        requireAuth(request, env);
+        if (!(await authorized(request, env))) return json({ error: "unauthorized" }, 401);
         const t = await patchTaskState(env, m[1], await request.json());
         if (!t) return json({ error: "not found" }, 404);
         return json({ ok: true, task: t });
@@ -145,6 +159,40 @@ function requireAuth(request, env) {
   const h = request.headers.get("Authorization") || "";
   const token = h.replace(/^Bearer\s+/i, "");
   if (!env.WRITE_KEY || token !== env.WRITE_KEY) throw httpErr(401, "unauthorized");
+}
+function getCookie(request, name) {
+  const c = request.headers.get("Cookie") || "";
+  const m = c.match(new RegExp("(?:^|;\\s*)" + name + "=([^;]+)"));
+  return m ? m[1] : null;
+}
+async function sessionOk(request, env) {
+  const sid = getCookie(request, "sess");
+  if (!sid) return false;
+  return !!(await env.PORTAL_KV.get("sess:" + sid, "json"));
+}
+// Writes are authorized by: browser session cookie, static bearer key, or OAuth access token.
+async function authorized(request, env) {
+  if (await sessionOk(request, env)) return true;
+  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!token) return false;
+  if (env.WRITE_KEY && token === env.WRITE_KEY) return true;
+  if (env.MCP_TOKEN && token === env.MCP_TOKEN) return true;
+  return !!(await env.PORTAL_KV.get("oauth:at:" + token, "json"));
+}
+function loginPage(err) {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Working Portal · Sign in</title><style>
+body{margin:0;font-family:Arial,sans-serif;background:#0B1F38;color:#B7CCE4;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.card{background:#15304C;border:1px solid #1E4063;border-radius:12px;padding:28px 26px;max-width:340px;width:90%}
+h1{color:#fff;font-size:20px;margin:0 0 4px}.k{letter-spacing:.2em;font-size:11px;color:#46A5E6;text-transform:uppercase}
+p{font-size:13px;color:#8fb0d6}input{width:100%;box-sizing:border-box;background:#0B1F38;color:#fff;border:1px solid #1E4063;border-radius:8px;padding:10px;font-size:14px;margin:10px 0}
+button{width:100%;background:#F2B13B;color:#1a1200;border:0;border-radius:8px;padding:11px;font-weight:700;font-size:14px;cursor:pointer}
+.err{color:#E0654F;font-size:13px;margin:6px 0}</style></head><body>
+<form class="card" method="POST" action="/login"><div class="k">Halo · Personal Ops</div>
+<h1>Working Portal</h1><p>Enter your portal key to continue.</p>
+${err ? `<div class="err">${escAttr(err)}</div>` : ""}
+<input type="password" name="password" placeholder="portal key" autofocus>
+<button type="submit">Sign in</button></form></body></html>`;
 }
 function httpErr(status, msg) { const e = new Error(msg); e.status = status; return e; }
 function today() { return new Date().toISOString().slice(0, 10); }
@@ -542,20 +590,15 @@ const UI = `<!doctype html>
     <select id="priority"><option value="high">High</option><option value="med" selected>Med</option><option value="low">Low</option></select>
     <input id="due" type="date" />
     <input id="project" placeholder="project" value="personal" style="max-width:120px"/>
-    <input id="key" type="password" placeholder="write key" />
     <button onclick="add()">Add</button>
     <button class="ghost" onclick="load()">↻</button>
   </div>
   <div id="board"></div>
-  <p class="muted">Canonical store: <code>data/tasks.json</code> · versioned in GitHub · brad@halo.one</p>
+  <p class="muted">Canonical store: <code>data/tasks.json</code> · versioned in GitHub · brad@halo.one · <a href="/logout">log out</a></p>
 </div>
 <script>
 const API = location.origin + "/api/tasks";
-let KEY = "";
-try{ KEY = localStorage.getItem("portal_write_key") || ""; }catch(e){}
-function getKey(){ const f=document.getElementById("key").value.trim(); if(f){ KEY=f; try{localStorage.setItem("portal_write_key",f)}catch(e){} } return KEY; }
-function ensureKey(){ const k=getKey(); if(!k){ alert("Enter your write key in the box at the top first — it'll be remembered after that."); document.getElementById("key").focus(); } return k; }
-async function apiErr(r){ try{const j=await r.json(); return (r.status===401?"Write key rejected — check it matches the WRITE_KEY you set. ":"")+(j.error||r.status);}catch(e){return String(r.status);} }
+async function apiErr(r){ try{const j=await r.json(); return (r.status===401?"Session expired — reload and sign in again. ":"")+(j.error||r.status);}catch(e){return String(r.status);} }
 function h(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function dueClass(d){ if(!d) return ""; const days=(new Date(d)-new Date())/864e5;
   if(days<0) return "over"; if(days<=3) return "soon"; return ""; }
@@ -591,24 +634,20 @@ function card(t){
 }
 async function add(){
   const title=document.getElementById("title").value.trim(); if(!title) return;
-  const key=ensureKey(); if(!key) return;
   const body={title, priority:document.getElementById("priority").value,
     due:document.getElementById("due").value||null, project:document.getElementById("project").value||"personal", source:"portal-ui"};
-  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify(body)});
+  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!r.ok){ alert("Add failed: "+await apiErr(r)); return; }
   document.getElementById("title").value=""; document.getElementById("due").value=""; load();
 }
 async function done(id){
-  const key=ensureKey(); if(!key) return;
-  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({status:"done"})});
+  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"done"})});
   if(!r.ok){ alert("Update failed: "+await apiErr(r)); return; } load();
 }
 async function reopen(id){
-  const key=ensureKey(); if(!key) return;
-  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({status:"open",completed:null})});
+  const r=await fetch(API+"/"+id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"open",completed:null})});
   if(!r.ok){ alert("Reopen failed: "+await apiErr(r)); return; } load();
 }
-try{ const sk=localStorage.getItem("portal_write_key"); if(sk) document.getElementById("key").value=sk; }catch(e){}
 load();
 </script>
 </body></html>`;
