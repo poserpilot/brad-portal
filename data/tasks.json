@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T23:32:01.141Z",
+  "updated": "2026-07-16T23:32:34.473Z",
   "updated_by": "portal-worker",
-  "next_id": 10,
+  "next_id": 11,
   "tasks": [
     {
       "id": "T-0001",
@@ -91,6 +91,18 @@
     {
       "id": "T-0009",
       "title": "Build a regulatory timeline for Brendan",
+      "status": "open",
+      "priority": "high",
+      "project": "personal",
+      "due": "2026-07-20",
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "portal-ui",
+      "notes": ""
+    },
+    {
+      "id": "T-0010",
+      "title": "schedule a Class III medical appointment",
       "status": "open",
       "priority": "high",
       "project": "personal",
