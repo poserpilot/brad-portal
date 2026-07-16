@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T23:36:05.987Z",
+  "updated": "2026-07-16T23:38:35.779Z",
   "updated_by": "portal-worker",
-  "next_id": 11,
+  "next_id": 12,
   "tasks": [
     {
       "id": "T-0001",
@@ -122,6 +122,18 @@
       "created": "2026-07-16",
       "completed": null,
       "source": "mcp",
+      "notes": ""
+    },
+    {
+      "id": "T-0011",
+      "title": "Update CRM Training",
+      "status": "open",
+      "priority": "high",
+      "project": "Halo",
+      "due": "2026-07-21",
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "portal-ui",
       "notes": ""
     }
   ],
