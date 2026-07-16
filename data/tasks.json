@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "updated": "2026-07-16T21:00:00Z",
+  "updated_by": "claude-session-2026-07-16",
+  "next_id": 8,
+  "tasks": [
+    {
+      "id": "T-0001",
+      "title": "Re-point build.js archive targets (CONOPS_DOC_ID / WORKING_DOC_IDS) to the regenerated Docs",
+      "status": "open",
+      "priority": "med",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "Daily-archive targets still point at the OLD retired Docs after the 2026-07-16 manual reconciliation. Fix via a small PR so the archive backs up the current Docs."
+    },
+    {
+      "id": "T-0002",
+      "title": "Delegate risk-acceptance authority (3 roles)",
+      "status": "open",
+      "priority": "high",
+      "project": "halo-reg",
+      "due": "2026-07-31",
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "Identify + delegate: Accountable Exec/CEO, Chief Eng or Head of Safety, program lead. Critical-path for the SMS section; delegation memo queued for signatures."
+    },
+    {
+      "id": "T-0003",
+      "title": "Redline SRA/SMS gate plan v0.2 → v0.3",
+      "status": "open",
+      "priority": "high",
+      "project": "halo-reg",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "v0.2 delivered (glossary, evidence-held box, FRR-schedule tie, 5th hazard H-TASK, 8040.6A grid appendix, votable decision sheet D-1..D-6). Awaiting Brad's redline before the internal gate review; deck derived afterward."
+    },
+    {
+      "id": "T-0004",
+      "title": "Curate first crop of Knowledge-tab Specifications tiles",
+      "status": "open",
+      "priority": "low",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "Some noise by design — use Re-key / Correct value / Retire to clean up the distilled spec tiles."
+    },
+    {
+      "id": "T-0005",
+      "title": "Scale-model build-up gate decision (medium-tier flight test)",
+      "status": "blocked",
+      "priority": "high",
+      "project": "halo-reg",
+      "due": "2026-08-03",
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "3 aircraft in build; medium-tier flight testing planned early August. Gate still OPEN. Watch this date."
+    },
+    {
+      "id": "T-0006",
+      "title": "Confirm remaining §927 data-call param owners",
+      "status": "open",
+      "priority": "med",
+      "project": "halo-reg",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "ENV-06 owner set = ENV-05 (ASE/Weather). Remaining owners across the 78-param sheet still being confirmed."
+    },
+    {
+      "id": "T-0007",
+      "title": "Periodic reminder: validation-gate proposal (TABLED)",
+      "status": "open",
+      "priority": "low",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": null,
+      "source": "context-repo §6",
+      "notes": "Written up, not built (tabled 2026-07-16). Brad asked to be reminded periodically in session wrap-ups."
+    }
+  ],
+  "done": []
+}

@@ -1,0 +1,19 @@
+name = "brad-portal"
+main = "worker.js"
+compatibility_date = "2026-07-16"
+
+# Public config (not secret)
+[vars]
+GITHUB_REPO = "poserpilot/brad-portal"
+GITHUB_PATH = "data/tasks.json"
+GITHUB_BRANCH = "main"
+
+# KV store for live task state. Replace id after you create the namespace
+# (see DEPLOY.md step 2).
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Secrets are NOT set here. Set them with `wrangler secret put` (DEPLOY.md):
+#   WRITE_KEY      – bearer token required for writes
+#   GITHUB_TOKEN   – fine-grained PAT, Contents R/W on brad-portal
