@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-17T14:50:15.522Z",
+  "updated": "2026-07-17T15:07:50.597Z",
   "updated_by": "portal-worker",
-  "next_id": 15,
+  "next_id": 16,
   "tasks": [
     {
       "id": "T-0001",
@@ -171,6 +171,18 @@
       "completed": null,
       "source": "mcp",
       "notes": "Concrete connection details for fixing GitHub context access (verified 2026-07-17 against GitHub's official Claude install guide + Claude Help Center). Note: the PAT is entered in YOUR Claude connector settings and stored there — Claude never sees it. GITrepo is ALREADY connected, so widening its token is usually enough; re-adding is only if you prefer a fresh connector.\n\nFASTEST — widen the existing GITrepo token (recommended, no re-add):\nOpen the PAT that GITrepo uses and grant it the two private repos.\n- Fine-grained token: https://github.com/settings/personal-access-tokens\n    Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\").\n    Permissions → Contents: Read and write · Pull requests: Read and write · Metadata: Read.\n- Classic token: https://github.com/settings/tokens → check the \"repo\" scope (covers all private repos).\nIf the token value changes, paste it back in Claude → Settings → Connectors → GITrepo.\n\nFRESH RE-ADD — the custom-connector \"link\":\nClaude → Settings → Connectors → Add custom connector.\n  Server URL:  https://api.githubcopilot.com/mcp   (GitHub's official remote MCP server)\n  Auth: PAT with \"repo\" scope (GitHub's remote server expects a PAT; OAuth-app auth isn't supported there).\nIf you do this, remove the old GITrepo afterward to avoid duplicate tools.\n\nSCOPE TIGHT: limit the token to brad-claude-context, monarch-dashboard, brad-portal — not \"all repositories\" — since the token can read/write everything in scope.\n\nVERIFY: ask Claude to read the root of poserpilot/brad-claude-context. Success = repo tree instead of 404. Then Claude can reopen the T-0012 WORKING_DOC_IDS change as a proper PR from canonical context.\n\nSources: github.com/github/github-mcp-server/blob/main/docs/installation-guides/install-claude.md ; support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp"
+    },
+    {
+      "id": "T-0015",
+      "title": "Follow up with John re the NMSU contract",
+      "status": "open",
+      "priority": "med",
+      "project": "halo-reg",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": null,
+      "source": "mcp",
+      "notes": ""
     }
   ],
   "done": []
