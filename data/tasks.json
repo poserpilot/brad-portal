@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-17T14:45:05.567Z",
+  "updated": "2026-07-17T14:47:27.995Z",
   "updated_by": "portal-worker",
-  "next_id": 13,
+  "next_id": 14,
   "tasks": [
     {
       "id": "T-0001",
@@ -147,6 +147,18 @@
       "completed": null,
       "source": "mcp",
       "notes": "Two editable INPUT working copies are already created in Drive: 927 tree → \"SRA-SRM Development\" folder (id 1VVy5NR3LLknk555I6V0gEiXV3n2ghOlt). This task just wires them into the daily GitHub archive — same WD_ID re-point as T-0001. Built on the v0.2 SRA/SMS plan.\n\nDoc IDs to register:\n- HALO-SC-001 (Safety Risk Analysis / Safety Case) = 1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\n- HALO-SRM-001 (Safety Risk Management / hazard log + SMS) = 1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\n\nSTEP 1 — Open the project on the PC:\n  cd C:\\Users\\bradm\\Claude\\Projects\\Dashboard\n\nSTEP 2 — Find where WORKING_DOC_IDS is defined (shared build.js / cron source):\n  findstr /s /n \"WORKING_DOC_IDS\" monarch-dashboard\\*.*\n  (it's the map already listing HALO-AMM-001, HALO-OM-001, HALO-FCC-001, HALO-CTP-001, HALO-FHL-001, HALO-TDL-001 — same one T-0001 re-points.)\n\nSTEP 3 — Add these two entries to that map (mind the trailing comma on the line above):\n  \"HALO-SC-001\": \"1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\",\n  \"HALO-SRM-001\": \"1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\"\n\nSTEP 4 — Deploy:\n  deploy.bat        (deploys Pages app + monarch-cron worker)\n  — or cron only —  cd monarch-dashboard\\cron && npx wrangler deploy\n  Then hard-refresh the site (Ctrl+F5).\n\nSTEP 5 — Verify next run (or trigger /run-daily with RUN_KEY):\n  Confirm two new files appear under snapshots/manuals/ in the monarch-dashboard repo:\n    HALO-SC-001-working-copy-<date>.txt\n    HALO-SRM-001-working-copy-<date>.txt\n  If either lands in the run's failed[] list, add mime:\"text/plain\" to the pushed target objects (same treatment as CONOPS_DOC_ID). The daily archive is already live (PR #33), so this should just work.\n\nNOTES / alignment:\n- HALO-SC-001 also exists as a Sheet register (SAFETYCASE_SHEET_ID → snapshots/safety-case/HALO-SC-001-register-*.csv). No collision: the new Doc archives to snapshots/manuals/ under a different path. Two different HALO-SC-001 artifacts by design (narrative Doc vs register).\n- Role names left as NAME TBD in both docs on purpose — that is T-0002 (delegate 3 risk-acceptance roles, due 07-31).\n- Docs are generated on v0.2; re-generate to v0.3 after the redline (T-0003).\n- Optional: register both as Manuals tabs on the dashboard (add to master.js) if you want them to render as pages like the other nine — say the word."
+    },
+    {
+      "id": "T-0013",
+      "title": "Fix GitHub (GITrepo) connector scope — grant access to brad-claude-context + monarch-dashboard",
+      "status": "open",
+      "priority": "high",
+      "project": "personal",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": null,
+      "source": "mcp",
+      "notes": "SYMPTOM (verified 2026-07-17): via the GITrepo (GitHub) Claude connector, Claude can read poserpilot/brad-portal (public) but gets 404 on BOTH poserpilot/brad-claude-context and poserpilot/monarch-dashboard. 404 = the token/app backing the connector does not have those private repos in scope. The connector itself is connected + enabled in chat; the \"to do\" portal connector works fine. So this is a repo-ACCESS scope gap, not a dead connector. Effect: Claude can't read your canonical context repo or open the WORKING_DOC_IDS change as a PR (T-0012 is a manual PC edit until this is fixed).\n\nFIX — pick the branch that matches how GITrepo is authed:\n\nA) If GITrepo uses a fine-grained Personal Access Token:\n  1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → open the token used by the connector.\n  2. Repository access → \"Only select repositories\" → add brad-claude-context AND monarch-dashboard (or switch to \"All repositories\").\n  3. Permissions: Contents = Read and write; Pull requests = Read and write; Metadata = Read.\n  4. Save (regenerate if required). If the token value changed, update it in Claude → Settings → Connectors → GITrepo → reconnect.\n\nB) If GITrepo is the GitHub App connector:\n  1. GitHub → Settings → Applications → Installed GitHub Apps → open the app for this connector → Configure.\n  2. Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\") → Save.\n  3. Claude → Settings → Connectors → GITrepo → reconnect/refresh if it doesn't pick up immediately.\n\nC) If you actually built a SEPARATE custom \"context\" connector yesterday:\n  It is NOT appearing as connected/enabled in this workspace (only GITrepo + \"to do\" show). Re-add it: Claude → Settings → Connectors → Add custom connector → its /mcp URL → authorize → make sure it's toggled ON for the chat.\n\nVERIFY: In a new Claude message ask it to read the root of poserpilot/brad-claude-context. Success = it lists the repo tree instead of 404. Then Claude can work from canonical context and open the T-0012 cron change as a PR (your \"human-approved via pull request\" doctrine) instead of a manual edit."
     }
   ],
   "done": []
