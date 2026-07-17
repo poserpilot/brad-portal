@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-16T23:38:35.779Z",
+  "updated": "2026-07-17T14:45:05.567Z",
   "updated_by": "portal-worker",
-  "next_id": 12,
+  "next_id": 13,
   "tasks": [
     {
       "id": "T-0001",
@@ -135,6 +135,18 @@
       "completed": null,
       "source": "portal-ui",
       "notes": ""
+    },
+    {
+      "id": "T-0012",
+      "title": "Deploy: wire HALO-SC-001 + HALO-SRM-001 into the daily cron (WORKING_DOC_IDS) and ship",
+      "status": "open",
+      "priority": "high",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": null,
+      "source": "mcp",
+      "notes": "Two editable INPUT working copies are already created in Drive: 927 tree → \"SRA-SRM Development\" folder (id 1VVy5NR3LLknk555I6V0gEiXV3n2ghOlt). This task just wires them into the daily GitHub archive — same WD_ID re-point as T-0001. Built on the v0.2 SRA/SMS plan.\n\nDoc IDs to register:\n- HALO-SC-001 (Safety Risk Analysis / Safety Case) = 1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\n- HALO-SRM-001 (Safety Risk Management / hazard log + SMS) = 1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\n\nSTEP 1 — Open the project on the PC:\n  cd C:\\Users\\bradm\\Claude\\Projects\\Dashboard\n\nSTEP 2 — Find where WORKING_DOC_IDS is defined (shared build.js / cron source):\n  findstr /s /n \"WORKING_DOC_IDS\" monarch-dashboard\\*.*\n  (it's the map already listing HALO-AMM-001, HALO-OM-001, HALO-FCC-001, HALO-CTP-001, HALO-FHL-001, HALO-TDL-001 — same one T-0001 re-points.)\n\nSTEP 3 — Add these two entries to that map (mind the trailing comma on the line above):\n  \"HALO-SC-001\": \"1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\",\n  \"HALO-SRM-001\": \"1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\"\n\nSTEP 4 — Deploy:\n  deploy.bat        (deploys Pages app + monarch-cron worker)\n  — or cron only —  cd monarch-dashboard\\cron && npx wrangler deploy\n  Then hard-refresh the site (Ctrl+F5).\n\nSTEP 5 — Verify next run (or trigger /run-daily with RUN_KEY):\n  Confirm two new files appear under snapshots/manuals/ in the monarch-dashboard repo:\n    HALO-SC-001-working-copy-<date>.txt\n    HALO-SRM-001-working-copy-<date>.txt\n  If either lands in the run's failed[] list, add mime:\"text/plain\" to the pushed target objects (same treatment as CONOPS_DOC_ID). The daily archive is already live (PR #33), so this should just work.\n\nNOTES / alignment:\n- HALO-SC-001 also exists as a Sheet register (SAFETYCASE_SHEET_ID → snapshots/safety-case/HALO-SC-001-register-*.csv). No collision: the new Doc archives to snapshots/manuals/ under a different path. Two different HALO-SC-001 artifacts by design (narrative Doc vs register).\n- Role names left as NAME TBD in both docs on purpose — that is T-0002 (delegate 3 risk-acceptance roles, due 07-31).\n- Docs are generated on v0.2; re-generate to v0.3 after the redline (T-0003).\n- Optional: register both as Manuals tabs on the dashboard (add to master.js) if you want them to render as pages like the other nine — say the word."
     }
   ],
   "done": []
