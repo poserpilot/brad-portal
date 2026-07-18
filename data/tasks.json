@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-17T15:16:49.313Z",
+  "updated": "2026-07-18T01:35:29.684Z",
   "updated_by": "portal-worker",
-  "next_id": 17,
+  "next_id": 18,
   "tasks": [
     {
       "id": "T-0001",
@@ -195,6 +195,18 @@
       "completed": null,
       "source": "mcp",
       "notes": "WHY: the portal MCP only exposes add/list/complete/reopen, so Claude can't set a due date (or edit any field) on an existing task — e.g. T-0015. The backend ALREADY supports it: patchTaskState() whitelists due/priority/project/title/notes/status and PATCH /api/tasks/:id works. This is purely an MCP-surface addition in app/worker.js. File: poserpilot/brad-portal → app/worker.js (canonical store is brad-claude-context/portal/data/tasks.json per the Worker env).\n\nCHANGE 1 — add to the MCP_TOOLS array (after reopen_todo):\n{\n  name: \"update_todo\",\n  description: \"Update fields of an existing to-do by id — set/clear the due date, or change priority, project, title, notes, or status. Only provided fields change.\",\n  inputSchema: {\n    type: \"object\",\n    properties: {\n      id: { type: \"string\", description: \"Task id, e.g. T-0015.\" },\n      due: { type: \"string\", description: \"Due date ISO YYYY-MM-DD; empty string clears it.\" },\n      priority: { type: \"string\", enum: [\"high\",\"med\",\"low\"] },\n      project: { type: \"string\" },\n      title: { type: \"string\" },\n      notes: { type: \"string\" },\n      status: { type: \"string\", enum: [\"open\",\"in_progress\",\"blocked\",\"done\",\"archived\"] }\n    },\n    required: [\"id\"]\n  }\n},\n\nCHANGE 2 — add a branch in runTool() (before the final \"Unknown tool\" return):\nif (name === \"update_todo\") {\n  const id = String(args.id || \"\");\n  if (!id) return { text: \"An id is required (e.g. T-0015).\", isError: true };\n  const patch = {};\n  for (const k of [\"due\",\"priority\",\"project\",\"title\",\"notes\",\"status\"]) {\n    if (k in args) patch[k] = (k === \"due\" && args[k] === \"\") ? null : args[k];\n  }\n  const t = await patchTaskState(env, id, patch);\n  if (!t) return { text: `No task with id ${id}.`, isError: true };\n  return { text: `Updated ${t.id}: \"${t.title}\"${t.due ? ` (due ${t.due})` : \" (no due date)\"} [${t.priority}, ${t.project}].` };\n}\n\nCHANGE 3 — bump README \"Tools exposed:\" line to: add_todo, list_todos, complete_todo, reopen_todo, update_todo.\n\nDEPLOY: per app/DEPLOY.md — npx wrangler deploy (from app/). No new secrets/bindings needed.\n\nAFTER DEPLOY: refresh/reconnect the \"to do\" connector in Claude so the new tool loads (tool list is cached per session).\n\nTEST: have Claude call update_todo id=T-0015 due=2026-07-21 → confirm the portal UI shows \"due 2026-07-21\" and tasks.json gets a \"portal: update T-0015\" commit. Then set any other due dates that were blocked.\n\nNOTE: I (Claude) have write access to brad-portal, so I can open this as a PR on request instead of you hand-editing."
+    },
+    {
+      "id": "T-0017",
+      "title": "Set up GCP flight-test data store (GCS + BigQuery) before Week-1",
+      "status": "open",
+      "priority": "high",
+      "project": "monarch",
+      "due": "2026-08-03",
+      "created": "2026-07-18",
+      "completed": null,
+      "source": "mcp",
+      "notes": "Decision made (ADR-001): GCS = versioned data lake / source of truth; BigQuery = query layer (partition by flight_date, cluster by signal). Post-flight batch; medium volume (100s MB–GBs/flight); consumers = dashboard + Claude + engineers + ML. No time-series DB needed yet (revisit only if live in-flight is required). Uses the existing corporate GCP + Workspace identity — no new vendor.\n\nTwo docs produced this session (put in the context repo, PR-able): ADR-001-flight-test-data-store.md and RUNBOOK-monarch-flight-data-gcp.md (exact gcloud/bq commands + DDL + least-priv service accounts + human-approved promote gate + cost caps).\n\nDo: (1) confirm region (us-west1 suggested) + project id; (2) run the runbook §1–§4 to create bucket/dataset/tables/service accounts; (3) send Claude a sample flight parquet schema so it finalizes the telemetry DDL (wide vs long) + load script; (4) add the \"Google Cloud BigQuery\" Claude connector with the read SA; (5) wire the dashboard Worker read path. Target ready before Flight Test Week 1 (~2026-08-04). Provisional pending review; land via PR."
     }
   ],
   "done": []
