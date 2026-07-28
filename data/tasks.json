@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-28T23:30:10.660Z",
+  "updated": "2026-07-28T23:30:22.418Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -243,18 +243,6 @@
       "completed": null,
       "source": "mcp",
       "notes": "Pick up from today's session. DONE: whole-stack map (artifact), GitHub token cleanup 10→4, brad-portal re-scoped to monarch-dashboard + brad-claude-context + PR write, and traced the daily job = monarch-cron Worker. Full context in Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md. NEXT: (1) in a fresh session my GitHub connection can now read monarch-dashboard directly — finish reading the back half of pages/functions/lib/build.js (runDailyRoutine/buildSnapshot/commit logic); (2) decide runner (recommended: extend the monarch-cron Worker vs new Apps Script); (3) fix the WORKING_DOC_IDS drift (points at archived 07-15 Docs, not current 07-23); (4) then design comment-capture → master.js edit as PR, kill \"regen\" naming, add auto-archive + link registry; (5) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete."
-    },
-    {
-      "id": "T-0023",
-      "title": "Resume ops-stack consolidation — extend monarch-cron Worker for comment capture",
-      "status": "open",
-      "priority": "med",
-      "project": "monarch",
-      "due": "2026-07-29",
-      "created": "2026-07-28",
-      "completed": null,
-      "source": "mcp",
-      "notes": "Pick up in a FRESH session (brad-portal token is now scoped to monarch-dashboard, so the GitHub connector can read the repo directly via API — no browser scraping). Next steps: (1) read the last ~half of monarch-dashboard/pages/functions/lib/build.js (runDailyRoutine @~69.6k, buildSnapshot @~76.6k, GitHub-commit code @~83k) to confirm exactly how the daily job builds the delta and commits; (2) bring the concrete build plan to EXTEND the monarch-cron Worker (not a new Apps Script) with: daily Doc-comment harvest → retained Inbox → resolved comment = approved → PR that edits master.js; (3) fix the WORKING_DOC_IDS drift (build.js points at the 2026-07-15 archived Doc IDs, not the current 2026-07-23 working copies); (4) naming cleanup (kill \"regen\"); (5) auto-archive + link registry; (6) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete. Full context: Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md."
     }
   ],
   "done": [
@@ -281,6 +269,18 @@
       "completed": "2026-07-28",
       "source": "mcp",
       "notes": "Pick up in a FRESH session (brad-portal token now scoped to monarch-dashboard, so the GitHub connector can read the repo directly — no browser scraping). Next steps: (1) read the rest of build.js via API — runDailyRoutine @~69.6k, buildSnapshot @~76.6k, git-commit code @~83k; (2) produce the build plan to EXTEND the monarch-cron Worker (it already has daily cron + Google Drive write OAuth + repo commits): daily-harvest Doc comments → resolved comment = approved → edit master.js via PR; (3) fix WORKING_DOC_IDS drift (points at archived 2026-07-15 Docs, not current 07-23 set); (4) kill \"regen\" naming; (5) auto-archive + link registry; (6) confirm the 2 held tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete. Full context: Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md."
+    },
+    {
+      "id": "T-0023",
+      "title": "Resume ops-stack consolidation — extend monarch-cron Worker for comment capture",
+      "status": "done",
+      "priority": "med",
+      "project": "monarch",
+      "due": "2026-07-29",
+      "created": "2026-07-28",
+      "completed": "2026-07-28",
+      "source": "mcp",
+      "notes": "Pick up in a FRESH session (brad-portal token is now scoped to monarch-dashboard, so the GitHub connector can read the repo directly via API — no browser scraping). Next steps: (1) read the last ~half of monarch-dashboard/pages/functions/lib/build.js (runDailyRoutine @~69.6k, buildSnapshot @~76.6k, GitHub-commit code @~83k) to confirm exactly how the daily job builds the delta and commits; (2) bring the concrete build plan to EXTEND the monarch-cron Worker (not a new Apps Script) with: daily Doc-comment harvest → retained Inbox → resolved comment = approved → PR that edits master.js; (3) fix the WORKING_DOC_IDS drift (build.js points at the 2026-07-15 archived Doc IDs, not the current 2026-07-23 working copies); (4) naming cleanup (kill \"regen\"); (5) auto-archive + link registry; (6) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete. Full context: Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md."
     }
   ]
 }
