@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-20T16:11:25.410Z",
+  "updated": "2026-07-28T22:49:14.747Z",
   "updated_by": "portal-worker",
-  "next_id": 19,
+  "next_id": 20,
   "tasks": [
     {
       "id": "T-0001",
@@ -219,6 +219,18 @@
       "completed": null,
       "source": "mcp",
       "notes": "From the 2026-07-17 STE (Issue 9) + AI-slop review of all 9 manuals. Fixes land in master.js (Drive working copies are regenerated outputs — editing them is thrown away), then redeploy; land via PR.\n\nSAFETY-CRITICAL (do first): resolve the conflicting minimum controllable airspeed — 4.5 m/s vs 6 m/s — shipped in AMM §2.1 and ConOps App B (traces to §927 reg PE-03). Two numbers for one limit in released manuals. Audit for other dual-value limits.\n\nPriority order:\nP1 Procedural/safety: convert OM §3 emergency, AMM §5.4 maintenance, FCC N/E-series to numbered imperative steps (one action/line, ≤20 words); move every warning/caution to a command BEFORE its step. Model to copy: the FCC E-series 'IMMEDIATE:' items (already strong STE).\nP2 Consistency: one controlled term/unit/date per concept across master.js — lost-link variants; non-participant vs third-party; ConOps vs CONOPS; °C not C; ISO-8601 dates; boom vs pod; launch-carriage variants; wingspan value.\nP3 De-slop (SC-001 + SRM-001 first — most affected): kill 'the crux', 'what this buys us', 'beating/living heart', 'honest/honestly', figurative scaffolding (spine/backbone/seed), advocacy adjectives, and the shared banner slop ('the team's working surface — comment and @mention'; 'where content matures'). Cut em-dash asides hard.\nP4 Grammar: simple tenses (not 'is developing'/'has flown'); restore dropped articles/verbs; ≤25 (descriptive)/≤20 (procedural) words.\n\nHighest-leverage single fix: the shared WORKING COPY banner is generated once in master.js and appears in all 9 docs — fix it once.\n\nSTANDING RULE: add an ASD-STE100 house-style block to master.js doc generation + a 1-page STE + anti-slop checklist to the context repo standing rules, so future regens are STE-clean by default and the checklist gates a manual before it is frozen. (Claude can draft both.)\n\nFull redline report delivered in-session: Monarch_Manuals_STE_and_Slop_Review_2026-07-17.md."
+    },
+    {
+      "id": "T-0019",
+      "title": "Verify first real Halo in-place manual run worked",
+      "status": "open",
+      "priority": "high",
+      "project": "halo",
+      "due": "2026-07-29",
+      "created": "2026-07-28",
+      "completed": null,
+      "source": "mcp",
+      "notes": "First real run of \"Daily Halo manual update (in-place writes)\" (trig_01Cz2pyNCsLirDM95aX4xZus) fires 2026-07-29 16:05 UTC. Review its end-of-scan summary before trusting it unattended. Check: any /ingest-manual POST returned \"id unchanged\" with empty errors; no manual failed the 90% length safety check; Set B file IDs unchanged (no duplicate Docs created); Medium/Buster content was flagged not written (per scope rule); no MFP data carried over."
     }
   ],
   "done": []
