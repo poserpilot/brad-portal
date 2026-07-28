@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-28T22:49:14.747Z",
+  "updated": "2026-07-28T23:29:12.772Z",
   "updated_by": "portal-worker",
-  "next_id": 20,
+  "next_id": 21,
   "tasks": [
     {
       "id": "T-0001",
@@ -231,6 +231,18 @@
       "completed": null,
       "source": "mcp",
       "notes": "First real run of \"Daily Halo manual update (in-place writes)\" (trig_01Cz2pyNCsLirDM95aX4xZus) fires 2026-07-29 16:05 UTC. Review its end-of-scan summary before trusting it unattended. Check: any /ingest-manual POST returned \"id unchanged\" with empty errors; no manual failed the 90% length safety check; Set B file IDs unchanged (no duplicate Docs created); Medium/Buster content was flagged not written (per scope rule); no MFP data carried over."
+    },
+    {
+      "id": "T-0020",
+      "title": "Resume ops-stack consolidation (manuals comment→master.js pipeline)",
+      "status": "open",
+      "priority": "med",
+      "project": "monarch",
+      "due": "2026-07-29",
+      "created": "2026-07-28",
+      "completed": null,
+      "source": "mcp",
+      "notes": "Pick up from today's session. DONE: whole-stack map (artifact), GitHub token cleanup 10→4, brad-portal re-scoped to monarch-dashboard + brad-claude-context + PR write, and traced the daily job = monarch-cron Worker. Full context in Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md. NEXT: (1) in a fresh session my GitHub connection can now read monarch-dashboard directly — finish reading the back half of pages/functions/lib/build.js (runDailyRoutine/buildSnapshot/commit logic); (2) decide runner (recommended: extend the monarch-cron Worker vs new Apps Script); (3) fix the WORKING_DOC_IDS drift (points at archived 07-15 Docs, not current 07-23); (4) then design comment-capture → master.js edit as PR, kill \"regen\" naming, add auto-archive + link registry; (5) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete."
     }
   ],
   "done": []
