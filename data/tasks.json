@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:03:57.113Z",
+  "updated": "2026-07-29T21:04:00.170Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -161,18 +161,6 @@
       "notes": ""
     },
     {
-      "id": "T-0016",
-      "title": "Add update_todo tool to the portal /mcp (edit due date + fields in place)",
-      "status": "open",
-      "priority": "med",
-      "project": "personal",
-      "due": null,
-      "created": "2026-07-17",
-      "completed": null,
-      "source": "mcp",
-      "notes": "WHY: the portal MCP only exposes add/list/complete/reopen, so Claude can't set a due date (or edit any field) on an existing task — e.g. T-0015. The backend ALREADY supports it: patchTaskState() whitelists due/priority/project/title/notes/status and PATCH /api/tasks/:id works. This is purely an MCP-surface addition in app/worker.js. File: poserpilot/brad-portal → app/worker.js (canonical store is brad-claude-context/portal/data/tasks.json per the Worker env).\n\nCHANGE 1 — add to the MCP_TOOLS array (after reopen_todo):\n{\n  name: \"update_todo\",\n  description: \"Update fields of an existing to-do by id — set/clear the due date, or change priority, project, title, notes, or status. Only provided fields change.\",\n  inputSchema: {\n    type: \"object\",\n    properties: {\n      id: { type: \"string\", description: \"Task id, e.g. T-0015.\" },\n      due: { type: \"string\", description: \"Due date ISO YYYY-MM-DD; empty string clears it.\" },\n      priority: { type: \"string\", enum: [\"high\",\"med\",\"low\"] },\n      project: { type: \"string\" },\n      title: { type: \"string\" },\n      notes: { type: \"string\" },\n      status: { type: \"string\", enum: [\"open\",\"in_progress\",\"blocked\",\"done\",\"archived\"] }\n    },\n    required: [\"id\"]\n  }\n},\n\nCHANGE 2 — add a branch in runTool() (before the final \"Unknown tool\" return):\nif (name === \"update_todo\") {\n  const id = String(args.id || \"\");\n  if (!id) return { text: \"An id is required (e.g. T-0015).\", isError: true };\n  const patch = {};\n  for (const k of [\"due\",\"priority\",\"project\",\"title\",\"notes\",\"status\"]) {\n    if (k in args) patch[k] = (k === \"due\" && args[k] === \"\") ? null : args[k];\n  }\n  const t = await patchTaskState(env, id, patch);\n  if (!t) return { text: `No task with id ${id}.`, isError: true };\n  return { text: `Updated ${t.id}: \"${t.title}\"${t.due ? ` (due ${t.due})` : \" (no due date)\"} [${t.priority}, ${t.project}].` };\n}\n\nCHANGE 3 — bump README \"Tools exposed:\" line to: add_todo, list_todos, complete_todo, reopen_todo, update_todo.\n\nDEPLOY: per app/DEPLOY.md — npx wrangler deploy (from app/). No new secrets/bindings needed.\n\nAFTER DEPLOY: refresh/reconnect the \"to do\" connector in Claude so the new tool loads (tool list is cached per session).\n\nTEST: have Claude call update_todo id=T-0015 due=2026-07-21 → confirm the portal UI shows \"due 2026-07-21\" and tasks.json gets a \"portal: update T-0015\" commit. Then set any other due dates that were blocked.\n\nNOTE: I (Claude) have write access to brad-portal, so I can open this as a PR on request instead of you hand-editing."
-    },
-    {
       "id": "T-0017",
       "title": "Set up GCP flight-test data store (GCS + BigQuery) before Week-1",
       "status": "open",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "mcp",
       "notes": "Pick up from today's session. DONE: whole-stack map (artifact), GitHub token cleanup 10→4, brad-portal re-scoped to monarch-dashboard + brad-claude-context + PR write, and traced the daily job = monarch-cron Worker. Full context in Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md. NEXT: (1) in a fresh session my GitHub connection can now read monarch-dashboard directly — finish reading the back half of pages/functions/lib/build.js (runDailyRoutine/buildSnapshot/commit logic); (2) decide runner (recommended: extend the monarch-cron Worker vs new Apps Script); (3) fix the WORKING_DOC_IDS drift (points at archived 07-15 Docs, not current 07-23); (4) then design comment-capture → master.js edit as PR, kill \"regen\" naming, add auto-archive + link registry; (5) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete."
+    },
+    {
+      "id": "T-0016",
+      "title": "Add update_todo tool to the portal /mcp (edit due date + fields in place)",
+      "status": "done",
+      "priority": "med",
+      "project": "personal",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": "2026-07-29",
+      "source": "mcp",
+      "notes": "WHY: the portal MCP only exposes add/list/complete/reopen, so Claude can't set a due date (or edit any field) on an existing task — e.g. T-0015. The backend ALREADY supports it: patchTaskState() whitelists due/priority/project/title/notes/status and PATCH /api/tasks/:id works. This is purely an MCP-surface addition in app/worker.js. File: poserpilot/brad-portal → app/worker.js (canonical store is brad-claude-context/portal/data/tasks.json per the Worker env).\n\nCHANGE 1 — add to the MCP_TOOLS array (after reopen_todo):\n{\n  name: \"update_todo\",\n  description: \"Update fields of an existing to-do by id — set/clear the due date, or change priority, project, title, notes, or status. Only provided fields change.\",\n  inputSchema: {\n    type: \"object\",\n    properties: {\n      id: { type: \"string\", description: \"Task id, e.g. T-0015.\" },\n      due: { type: \"string\", description: \"Due date ISO YYYY-MM-DD; empty string clears it.\" },\n      priority: { type: \"string\", enum: [\"high\",\"med\",\"low\"] },\n      project: { type: \"string\" },\n      title: { type: \"string\" },\n      notes: { type: \"string\" },\n      status: { type: \"string\", enum: [\"open\",\"in_progress\",\"blocked\",\"done\",\"archived\"] }\n    },\n    required: [\"id\"]\n  }\n},\n\nCHANGE 2 — add a branch in runTool() (before the final \"Unknown tool\" return):\nif (name === \"update_todo\") {\n  const id = String(args.id || \"\");\n  if (!id) return { text: \"An id is required (e.g. T-0015).\", isError: true };\n  const patch = {};\n  for (const k of [\"due\",\"priority\",\"project\",\"title\",\"notes\",\"status\"]) {\n    if (k in args) patch[k] = (k === \"due\" && args[k] === \"\") ? null : args[k];\n  }\n  const t = await patchTaskState(env, id, patch);\n  if (!t) return { text: `No task with id ${id}.`, isError: true };\n  return { text: `Updated ${t.id}: \"${t.title}\"${t.due ? ` (due ${t.due})` : \" (no due date)\"} [${t.priority}, ${t.project}].` };\n}\n\nCHANGE 3 — bump README \"Tools exposed:\" line to: add_todo, list_todos, complete_todo, reopen_todo, update_todo.\n\nDEPLOY: per app/DEPLOY.md — npx wrangler deploy (from app/). No new secrets/bindings needed.\n\nAFTER DEPLOY: refresh/reconnect the \"to do\" connector in Claude so the new tool loads (tool list is cached per session).\n\nTEST: have Claude call update_todo id=T-0015 due=2026-07-21 → confirm the portal UI shows \"due 2026-07-21\" and tasks.json gets a \"portal: update T-0015\" commit. Then set any other due dates that were blocked.\n\nNOTE: I (Claude) have write access to brad-portal, so I can open this as a PR on request instead of you hand-editing."
     }
   ]
 }
