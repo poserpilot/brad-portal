@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:04:11.889Z",
+  "updated": "2026-07-29T21:04:19.012Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -15,18 +15,6 @@
       "completed": null,
       "source": "context-repo §6",
       "notes": "v0.2 delivered (glossary, evidence-held box, FRR-schedule tie, 5th hazard H-TASK, 8040.6A grid appendix, votable decision sheet D-1..D-6). Awaiting Brad's redline before the internal gate review; deck derived afterward."
-    },
-    {
-      "id": "T-0004",
-      "title": "Curate first crop of Knowledge-tab Specifications tiles",
-      "status": "open",
-      "priority": "low",
-      "project": "monarch",
-      "due": null,
-      "created": "2026-07-16",
-      "completed": null,
-      "source": "context-repo §6",
-      "notes": "Some noise by design — use Re-key / Correct value / Retire to clean up the distilled spec tiles."
     },
     {
       "id": "T-0005",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "context-repo §6",
       "notes": "Written up, not built (tabled 2026-07-16). Brad asked to be reminded periodically in session wrap-ups."
+    },
+    {
+      "id": "T-0004",
+      "title": "Curate first crop of Knowledge-tab Specifications tiles",
+      "status": "done",
+      "priority": "low",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": "2026-07-29",
+      "source": "context-repo §6",
+      "notes": "Some noise by design — use Re-key / Correct value / Retire to clean up the distilled spec tiles."
     }
   ]
 }
