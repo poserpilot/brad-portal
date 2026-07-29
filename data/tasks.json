@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:03:37.583Z",
+  "updated": "2026-07-29T21:03:41.695Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -161,18 +161,6 @@
       "notes": "SYMPTOM (verified 2026-07-17): via the GITrepo (GitHub) Claude connector, Claude can read poserpilot/brad-portal (public) but gets 404 on BOTH poserpilot/brad-claude-context and poserpilot/monarch-dashboard. 404 = the token/app backing the connector does not have those private repos in scope. The connector itself is connected + enabled in chat; the \"to do\" portal connector works fine. So this is a repo-ACCESS scope gap, not a dead connector. Effect: Claude can't read your canonical context repo or open the WORKING_DOC_IDS change as a PR (T-0012 is a manual PC edit until this is fixed).\n\nFIX — pick the branch that matches how GITrepo is authed:\n\nA) If GITrepo uses a fine-grained Personal Access Token:\n  1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → open the token used by the connector.\n  2. Repository access → \"Only select repositories\" → add brad-claude-context AND monarch-dashboard (or switch to \"All repositories\").\n  3. Permissions: Contents = Read and write; Pull requests = Read and write; Metadata = Read.\n  4. Save (regenerate if required). If the token value changed, update it in Claude → Settings → Connectors → GITrepo → reconnect.\n\nB) If GITrepo is the GitHub App connector:\n  1. GitHub → Settings → Applications → Installed GitHub Apps → open the app for this connector → Configure.\n  2. Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\") → Save.\n  3. Claude → Settings → Connectors → GITrepo → reconnect/refresh if it doesn't pick up immediately.\n\nC) If you actually built a SEPARATE custom \"context\" connector yesterday:\n  It is NOT appearing as connected/enabled in this workspace (only GITrepo + \"to do\" show). Re-add it: Claude → Settings → Connectors → Add custom connector → its /mcp URL → authorize → make sure it's toggled ON for the chat.\n\nVERIFY: In a new Claude message ask it to read the root of poserpilot/brad-claude-context. Success = it lists the repo tree instead of 404. Then Claude can work from canonical context and open the T-0012 cron change as a PR (your \"human-approved via pull request\" doctrine) instead of a manual edit."
     },
     {
-      "id": "T-0014",
-      "title": "GitHub connector — exact connection link + PAT steps (companion to T-0013)",
-      "status": "open",
-      "priority": "high",
-      "project": "personal",
-      "due": null,
-      "created": "2026-07-17",
-      "completed": null,
-      "source": "mcp",
-      "notes": "Concrete connection details for fixing GitHub context access (verified 2026-07-17 against GitHub's official Claude install guide + Claude Help Center). Note: the PAT is entered in YOUR Claude connector settings and stored there — Claude never sees it. GITrepo is ALREADY connected, so widening its token is usually enough; re-adding is only if you prefer a fresh connector.\n\nFASTEST — widen the existing GITrepo token (recommended, no re-add):\nOpen the PAT that GITrepo uses and grant it the two private repos.\n- Fine-grained token: https://github.com/settings/personal-access-tokens\n    Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\").\n    Permissions → Contents: Read and write · Pull requests: Read and write · Metadata: Read.\n- Classic token: https://github.com/settings/tokens → check the \"repo\" scope (covers all private repos).\nIf the token value changes, paste it back in Claude → Settings → Connectors → GITrepo.\n\nFRESH RE-ADD — the custom-connector \"link\":\nClaude → Settings → Connectors → Add custom connector.\n  Server URL:  https://api.githubcopilot.com/mcp   (GitHub's official remote MCP server)\n  Auth: PAT with \"repo\" scope (GitHub's remote server expects a PAT; OAuth-app auth isn't supported there).\nIf you do this, remove the old GITrepo afterward to avoid duplicate tools.\n\nSCOPE TIGHT: limit the token to brad-claude-context, monarch-dashboard, brad-portal — not \"all repositories\" — since the token can read/write everything in scope.\n\nVERIFY: ask Claude to read the root of poserpilot/brad-claude-context. Success = repo tree instead of 404. Then Claude can reopen the T-0012 WORKING_DOC_IDS change as a proper PR from canonical context.\n\nSources: github.com/github/github-mcp-server/blob/main/docs/installation-guides/install-claude.md ; support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp"
-    },
-    {
       "id": "T-0015",
       "title": "Follow up with John re the NMSU contract",
       "status": "open",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "mcp",
       "notes": "From the 2026-07-17 STE (Issue 9) + AI-slop review of all 9 manuals. Fixes land in master.js (Drive working copies are regenerated outputs — editing them is thrown away), then redeploy; land via PR.\n\nSAFETY-CRITICAL (do first): resolve the conflicting minimum controllable airspeed — 4.5 m/s vs 6 m/s — shipped in AMM §2.1 and ConOps App B (traces to §927 reg PE-03). Two numbers for one limit in released manuals. Audit for other dual-value limits.\n\nPriority order:\nP1 Procedural/safety: convert OM §3 emergency, AMM §5.4 maintenance, FCC N/E-series to numbered imperative steps (one action/line, ≤20 words); move every warning/caution to a command BEFORE its step. Model to copy: the FCC E-series 'IMMEDIATE:' items (already strong STE).\nP2 Consistency: one controlled term/unit/date per concept across master.js — lost-link variants; non-participant vs third-party; ConOps vs CONOPS; °C not C; ISO-8601 dates; boom vs pod; launch-carriage variants; wingspan value.\nP3 De-slop (SC-001 + SRM-001 first — most affected): kill 'the crux', 'what this buys us', 'beating/living heart', 'honest/honestly', figurative scaffolding (spine/backbone/seed), advocacy adjectives, and the shared banner slop ('the team's working surface — comment and @mention'; 'where content matures'). Cut em-dash asides hard.\nP4 Grammar: simple tenses (not 'is developing'/'has flown'); restore dropped articles/verbs; ≤25 (descriptive)/≤20 (procedural) words.\n\nHighest-leverage single fix: the shared WORKING COPY banner is generated once in master.js and appears in all 9 docs — fix it once.\n\nSTANDING RULE: add an ASD-STE100 house-style block to master.js doc generation + a 1-page STE + anti-slop checklist to the context repo standing rules, so future regens are STE-clean by default and the checklist gates a manual before it is frozen. (Claude can draft both.)\n\nFull redline report delivered in-session: Monarch_Manuals_STE_and_Slop_Review_2026-07-17.md."
+    },
+    {
+      "id": "T-0014",
+      "title": "GitHub connector — exact connection link + PAT steps (companion to T-0013)",
+      "status": "done",
+      "priority": "high",
+      "project": "personal",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": "2026-07-29",
+      "source": "mcp",
+      "notes": "Concrete connection details for fixing GitHub context access (verified 2026-07-17 against GitHub's official Claude install guide + Claude Help Center). Note: the PAT is entered in YOUR Claude connector settings and stored there — Claude never sees it. GITrepo is ALREADY connected, so widening its token is usually enough; re-adding is only if you prefer a fresh connector.\n\nFASTEST — widen the existing GITrepo token (recommended, no re-add):\nOpen the PAT that GITrepo uses and grant it the two private repos.\n- Fine-grained token: https://github.com/settings/personal-access-tokens\n    Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\").\n    Permissions → Contents: Read and write · Pull requests: Read and write · Metadata: Read.\n- Classic token: https://github.com/settings/tokens → check the \"repo\" scope (covers all private repos).\nIf the token value changes, paste it back in Claude → Settings → Connectors → GITrepo.\n\nFRESH RE-ADD — the custom-connector \"link\":\nClaude → Settings → Connectors → Add custom connector.\n  Server URL:  https://api.githubcopilot.com/mcp   (GitHub's official remote MCP server)\n  Auth: PAT with \"repo\" scope (GitHub's remote server expects a PAT; OAuth-app auth isn't supported there).\nIf you do this, remove the old GITrepo afterward to avoid duplicate tools.\n\nSCOPE TIGHT: limit the token to brad-claude-context, monarch-dashboard, brad-portal — not \"all repositories\" — since the token can read/write everything in scope.\n\nVERIFY: ask Claude to read the root of poserpilot/brad-claude-context. Success = repo tree instead of 404. Then Claude can reopen the T-0012 WORKING_DOC_IDS change as a proper PR from canonical context.\n\nSources: github.com/github/github-mcp-server/blob/main/docs/installation-guides/install-claude.md ; support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp"
     }
   ]
 }
