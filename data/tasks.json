@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:04:19.012Z",
+  "updated": "2026-07-29T21:04:44.161Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -123,18 +123,6 @@
       "completed": null,
       "source": "mcp",
       "notes": "Decision made (ADR-001): GCS = versioned data lake / source of truth; BigQuery = query layer (partition by flight_date, cluster by signal). Post-flight batch; medium volume (100s MB–GBs/flight); consumers = dashboard + Claude + engineers + ML. No time-series DB needed yet (revisit only if live in-flight is required). Uses the existing corporate GCP + Workspace identity — no new vendor.\n\nTwo docs produced this session (put in the context repo, PR-able): ADR-001-flight-test-data-store.md and RUNBOOK-monarch-flight-data-gcp.md (exact gcloud/bq commands + DDL + least-priv service accounts + human-approved promote gate + cost caps).\n\nDo: (1) confirm region (us-west1 suggested) + project id; (2) run the runbook §1–§4 to create bucket/dataset/tables/service accounts; (3) send Claude a sample flight parquet schema so it finalizes the telemetry DDL (wide vs long) + load script; (4) add the \"Google Cloud BigQuery\" Claude connector with the read SA; (5) wire the dashboard Worker read path. Target ready before Flight Test Week 1 (~2026-08-04). Provisional pending review; land via PR."
-    },
-    {
-      "id": "T-0019",
-      "title": "Verify first real Halo in-place manual run worked",
-      "status": "open",
-      "priority": "high",
-      "project": "halo",
-      "due": "2026-07-29",
-      "created": "2026-07-28",
-      "completed": null,
-      "source": "mcp",
-      "notes": "First real run of \"Daily Halo manual update (in-place writes)\" (trig_01Cz2pyNCsLirDM95aX4xZus) fires 2026-07-29 16:05 UTC. Review its end-of-scan summary before trusting it unattended. Check: any /ingest-manual POST returned \"id unchanged\" with empty errors; no manual failed the 90% length safety check; Set B file IDs unchanged (no duplicate Docs created); Medium/Buster content was flagged not written (per scope rule); no MFP data carried over."
     }
   ],
   "done": [
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "context-repo §6",
       "notes": "Some noise by design — use Re-key / Correct value / Retire to clean up the distilled spec tiles."
+    },
+    {
+      "id": "T-0019",
+      "title": "Verify first real Halo in-place manual run worked",
+      "status": "done",
+      "priority": "high",
+      "project": "halo",
+      "due": "2026-07-29",
+      "created": "2026-07-28",
+      "completed": "2026-07-29",
+      "source": "mcp",
+      "notes": "First real run of \"Daily Halo manual update (in-place writes)\" (trig_01Cz2pyNCsLirDM95aX4xZus) fires 2026-07-29 16:05 UTC. Review its end-of-scan summary before trusting it unattended. Check: any /ingest-manual POST returned \"id unchanged\" with empty errors; no manual failed the 90% length safety check; Set B file IDs unchanged (no duplicate Docs created); Medium/Buster content was flagged not written (per scope rule); no MFP data carried over."
     }
   ]
 }
