@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:04:09.471Z",
+  "updated": "2026-07-29T21:04:11.889Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -51,18 +51,6 @@
       "completed": null,
       "source": "context-repo §6",
       "notes": "ENV-06 owner set = ENV-05 (ASE/Weather). Remaining owners across the 78-param sheet still being confirmed."
-    },
-    {
-      "id": "T-0007",
-      "title": "Periodic reminder: validation-gate proposal (TABLED)",
-      "status": "open",
-      "priority": "low",
-      "project": "monarch",
-      "due": null,
-      "created": "2026-07-16",
-      "completed": null,
-      "source": "context-repo §6",
-      "notes": "Written up, not built (tabled 2026-07-16). Brad asked to be reminded periodically in session wrap-ups."
     },
     {
       "id": "T-0002",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "context-repo §6",
       "notes": "Daily-archive targets still point at the OLD retired Docs after the 2026-07-16 manual reconciliation. Fix via a small PR so the archive backs up the current Docs."
+    },
+    {
+      "id": "T-0007",
+      "title": "Periodic reminder: validation-gate proposal (TABLED)",
+      "status": "done",
+      "priority": "low",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": "2026-07-29",
+      "source": "context-repo §6",
+      "notes": "Written up, not built (tabled 2026-07-16). Brad asked to be reminded periodically in session wrap-ups."
     }
   ]
 }
