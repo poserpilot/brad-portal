@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:04:00.170Z",
+  "updated": "2026-07-29T21:04:02.548Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -149,18 +149,6 @@
       "notes": "Two editable INPUT working copies are already created in Drive: 927 tree → \"SRA-SRM Development\" folder (id 1VVy5NR3LLknk555I6V0gEiXV3n2ghOlt). This task just wires them into the daily GitHub archive — same WD_ID re-point as T-0001. Built on the v0.2 SRA/SMS plan.\n\nDoc IDs to register:\n- HALO-SC-001 (Safety Risk Analysis / Safety Case) = 1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\n- HALO-SRM-001 (Safety Risk Management / hazard log + SMS) = 1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\n\nSTEP 1 — Open the project on the PC:\n  cd C:\\Users\\bradm\\Claude\\Projects\\Dashboard\n\nSTEP 2 — Find where WORKING_DOC_IDS is defined (shared build.js / cron source):\n  findstr /s /n \"WORKING_DOC_IDS\" monarch-dashboard\\*.*\n  (it's the map already listing HALO-AMM-001, HALO-OM-001, HALO-FCC-001, HALO-CTP-001, HALO-FHL-001, HALO-TDL-001 — same one T-0001 re-points.)\n\nSTEP 3 — Add these two entries to that map (mind the trailing comma on the line above):\n  \"HALO-SC-001\": \"1fyNlDvWyfDnYBDXRM8TH1ICqNx2OQ13LJ1GjkvKWUIg\",\n  \"HALO-SRM-001\": \"1y9jLe7n5KZzoGYoxQ5aoukVgCuPUb7PAJlft7-MlhQo\"\n\nSTEP 4 — Deploy:\n  deploy.bat        (deploys Pages app + monarch-cron worker)\n  — or cron only —  cd monarch-dashboard\\cron && npx wrangler deploy\n  Then hard-refresh the site (Ctrl+F5).\n\nSTEP 5 — Verify next run (or trigger /run-daily with RUN_KEY):\n  Confirm two new files appear under snapshots/manuals/ in the monarch-dashboard repo:\n    HALO-SC-001-working-copy-<date>.txt\n    HALO-SRM-001-working-copy-<date>.txt\n  If either lands in the run's failed[] list, add mime:\"text/plain\" to the pushed target objects (same treatment as CONOPS_DOC_ID). The daily archive is already live (PR #33), so this should just work.\n\nNOTES / alignment:\n- HALO-SC-001 also exists as a Sheet register (SAFETYCASE_SHEET_ID → snapshots/safety-case/HALO-SC-001-register-*.csv). No collision: the new Doc archives to snapshots/manuals/ under a different path. Two different HALO-SC-001 artifacts by design (narrative Doc vs register).\n- Role names left as NAME TBD in both docs on purpose — that is T-0002 (delegate 3 risk-acceptance roles, due 07-31).\n- Docs are generated on v0.2; re-generate to v0.3 after the redline (T-0003).\n- Optional: register both as Manuals tabs on the dashboard (add to master.js) if you want them to render as pages like the other nine — say the word."
     },
     {
-      "id": "T-0015",
-      "title": "Follow up with John re the NMSU contract",
-      "status": "open",
-      "priority": "med",
-      "project": "halo-reg",
-      "due": null,
-      "created": "2026-07-17",
-      "completed": null,
-      "source": "mcp",
-      "notes": ""
-    },
-    {
       "id": "T-0017",
       "title": "Set up GCP flight-test data store (GCS + BigQuery) before Week-1",
       "status": "open",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "mcp",
       "notes": "WHY: the portal MCP only exposes add/list/complete/reopen, so Claude can't set a due date (or edit any field) on an existing task — e.g. T-0015. The backend ALREADY supports it: patchTaskState() whitelists due/priority/project/title/notes/status and PATCH /api/tasks/:id works. This is purely an MCP-surface addition in app/worker.js. File: poserpilot/brad-portal → app/worker.js (canonical store is brad-claude-context/portal/data/tasks.json per the Worker env).\n\nCHANGE 1 — add to the MCP_TOOLS array (after reopen_todo):\n{\n  name: \"update_todo\",\n  description: \"Update fields of an existing to-do by id — set/clear the due date, or change priority, project, title, notes, or status. Only provided fields change.\",\n  inputSchema: {\n    type: \"object\",\n    properties: {\n      id: { type: \"string\", description: \"Task id, e.g. T-0015.\" },\n      due: { type: \"string\", description: \"Due date ISO YYYY-MM-DD; empty string clears it.\" },\n      priority: { type: \"string\", enum: [\"high\",\"med\",\"low\"] },\n      project: { type: \"string\" },\n      title: { type: \"string\" },\n      notes: { type: \"string\" },\n      status: { type: \"string\", enum: [\"open\",\"in_progress\",\"blocked\",\"done\",\"archived\"] }\n    },\n    required: [\"id\"]\n  }\n},\n\nCHANGE 2 — add a branch in runTool() (before the final \"Unknown tool\" return):\nif (name === \"update_todo\") {\n  const id = String(args.id || \"\");\n  if (!id) return { text: \"An id is required (e.g. T-0015).\", isError: true };\n  const patch = {};\n  for (const k of [\"due\",\"priority\",\"project\",\"title\",\"notes\",\"status\"]) {\n    if (k in args) patch[k] = (k === \"due\" && args[k] === \"\") ? null : args[k];\n  }\n  const t = await patchTaskState(env, id, patch);\n  if (!t) return { text: `No task with id ${id}.`, isError: true };\n  return { text: `Updated ${t.id}: \"${t.title}\"${t.due ? ` (due ${t.due})` : \" (no due date)\"} [${t.priority}, ${t.project}].` };\n}\n\nCHANGE 3 — bump README \"Tools exposed:\" line to: add_todo, list_todos, complete_todo, reopen_todo, update_todo.\n\nDEPLOY: per app/DEPLOY.md — npx wrangler deploy (from app/). No new secrets/bindings needed.\n\nAFTER DEPLOY: refresh/reconnect the \"to do\" connector in Claude so the new tool loads (tool list is cached per session).\n\nTEST: have Claude call update_todo id=T-0015 due=2026-07-21 → confirm the portal UI shows \"due 2026-07-21\" and tasks.json gets a \"portal: update T-0015\" commit. Then set any other due dates that were blocked.\n\nNOTE: I (Claude) have write access to brad-portal, so I can open this as a PR on request instead of you hand-editing."
+    },
+    {
+      "id": "T-0015",
+      "title": "Follow up with John re the NMSU contract",
+      "status": "done",
+      "priority": "med",
+      "project": "halo-reg",
+      "due": null,
+      "created": "2026-07-17",
+      "completed": "2026-07-29",
+      "source": "mcp",
+      "notes": ""
     }
   ]
 }
