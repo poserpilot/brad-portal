@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:03:47.263Z",
+  "updated": "2026-07-29T21:03:57.113Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
@@ -195,18 +195,6 @@
       "completed": null,
       "source": "mcp",
       "notes": "First real run of \"Daily Halo manual update (in-place writes)\" (trig_01Cz2pyNCsLirDM95aX4xZus) fires 2026-07-29 16:05 UTC. Review its end-of-scan summary before trusting it unattended. Check: any /ingest-manual POST returned \"id unchanged\" with empty errors; no manual failed the 90% length safety check; Set B file IDs unchanged (no duplicate Docs created); Medium/Buster content was flagged not written (per scope rule); no MFP data carried over."
-    },
-    {
-      "id": "T-0020",
-      "title": "Resume ops-stack consolidation (manuals comment→master.js pipeline)",
-      "status": "open",
-      "priority": "med",
-      "project": "monarch",
-      "due": "2026-07-29",
-      "created": "2026-07-28",
-      "completed": null,
-      "source": "mcp",
-      "notes": "Pick up from today's session. DONE: whole-stack map (artifact), GitHub token cleanup 10→4, brad-portal re-scoped to monarch-dashboard + brad-claude-context + PR write, and traced the daily job = monarch-cron Worker. Full context in Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md. NEXT: (1) in a fresh session my GitHub connection can now read monarch-dashboard directly — finish reading the back half of pages/functions/lib/build.js (runDailyRoutine/buildSnapshot/commit logic); (2) decide runner (recommended: extend the monarch-cron Worker vs new Apps Script); (3) fix the WORKING_DOC_IDS drift (points at archived 07-15 Docs, not current 07-23); (4) then design comment-capture → master.js edit as PR, kill \"regen\" naming, add auto-archive + link registry; (5) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete."
     }
   ],
   "done": [
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "mcp",
       "notes": "SYMPTOM (verified 2026-07-17): via the GITrepo (GitHub) Claude connector, Claude can read poserpilot/brad-portal (public) but gets 404 on BOTH poserpilot/brad-claude-context and poserpilot/monarch-dashboard. 404 = the token/app backing the connector does not have those private repos in scope. The connector itself is connected + enabled in chat; the \"to do\" portal connector works fine. So this is a repo-ACCESS scope gap, not a dead connector. Effect: Claude can't read your canonical context repo or open the WORKING_DOC_IDS change as a PR (T-0012 is a manual PC edit until this is fixed).\n\nFIX — pick the branch that matches how GITrepo is authed:\n\nA) If GITrepo uses a fine-grained Personal Access Token:\n  1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → open the token used by the connector.\n  2. Repository access → \"Only select repositories\" → add brad-claude-context AND monarch-dashboard (or switch to \"All repositories\").\n  3. Permissions: Contents = Read and write; Pull requests = Read and write; Metadata = Read.\n  4. Save (regenerate if required). If the token value changed, update it in Claude → Settings → Connectors → GITrepo → reconnect.\n\nB) If GITrepo is the GitHub App connector:\n  1. GitHub → Settings → Applications → Installed GitHub Apps → open the app for this connector → Configure.\n  2. Repository access → add brad-claude-context + monarch-dashboard (or \"All repositories\") → Save.\n  3. Claude → Settings → Connectors → GITrepo → reconnect/refresh if it doesn't pick up immediately.\n\nC) If you actually built a SEPARATE custom \"context\" connector yesterday:\n  It is NOT appearing as connected/enabled in this workspace (only GITrepo + \"to do\" show). Re-add it: Claude → Settings → Connectors → Add custom connector → its /mcp URL → authorize → make sure it's toggled ON for the chat.\n\nVERIFY: In a new Claude message ask it to read the root of poserpilot/brad-claude-context. Success = it lists the repo tree instead of 404. Then Claude can work from canonical context and open the T-0012 cron change as a PR (your \"human-approved via pull request\" doctrine) instead of a manual edit."
+    },
+    {
+      "id": "T-0020",
+      "title": "Resume ops-stack consolidation (manuals comment→master.js pipeline)",
+      "status": "done",
+      "priority": "med",
+      "project": "monarch",
+      "due": "2026-07-29",
+      "created": "2026-07-28",
+      "completed": "2026-07-29",
+      "source": "mcp",
+      "notes": "Pick up from today's session. DONE: whole-stack map (artifact), GitHub token cleanup 10→4, brad-portal re-scoped to monarch-dashboard + brad-claude-context + PR write, and traced the daily job = monarch-cron Worker. Full context in Project \"Regulatory Approvals\" → claude/ops-stack-consolidation-notes.md. NEXT: (1) in a fresh session my GitHub connection can now read monarch-dashboard directly — finish reading the back half of pages/functions/lib/build.js (runDailyRoutine/buildSnapshot/commit logic); (2) decide runner (recommended: extend the monarch-cron Worker vs new Apps Script); (3) fix the WORKING_DOC_IDS drift (points at archived 07-15 Docs, not current 07-23); (4) then design comment-capture → master.js edit as PR, kill \"regen\" naming, add auto-archive + link registry; (5) confirm the 2 HOLD tokens (monarch-daily-delta, monarch-cron-log) are orphans, then delete."
     }
   ]
 }
