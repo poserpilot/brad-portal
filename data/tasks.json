@@ -1,21 +1,9 @@
 {
   "schema_version": 1,
-  "updated": "2026-07-29T21:04:02.548Z",
+  "updated": "2026-07-29T21:04:09.471Z",
   "updated_by": "portal-worker",
   "next_id": 24,
   "tasks": [
-    {
-      "id": "T-0001",
-      "title": "Re-point build.js archive targets (CONOPS_DOC_ID / WORKING_DOC_IDS) to the regenerated Docs",
-      "status": "open",
-      "priority": "med",
-      "project": "monarch",
-      "due": null,
-      "created": "2026-07-16",
-      "completed": null,
-      "source": "context-repo §6",
-      "notes": "Daily-archive targets still point at the OLD retired Docs after the 2026-07-16 manual reconciliation. Fix via a small PR so the archive backs up the current Docs."
-    },
     {
       "id": "T-0003",
       "title": "Redline SRA/SMS gate plan v0.2 → v0.3",
@@ -281,6 +269,18 @@
       "completed": "2026-07-29",
       "source": "mcp",
       "notes": ""
+    },
+    {
+      "id": "T-0001",
+      "title": "Re-point build.js archive targets (CONOPS_DOC_ID / WORKING_DOC_IDS) to the regenerated Docs",
+      "status": "done",
+      "priority": "med",
+      "project": "monarch",
+      "due": null,
+      "created": "2026-07-16",
+      "completed": "2026-07-29",
+      "source": "context-repo §6",
+      "notes": "Daily-archive targets still point at the OLD retired Docs after the 2026-07-16 manual reconciliation. Fix via a small PR so the archive backs up the current Docs."
     }
   ]
 }
